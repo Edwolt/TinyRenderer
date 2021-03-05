@@ -3,9 +3,9 @@ use std::io::Write;
 
 #[derive(Clone)]
 pub struct Color {
-    pub red: u8,
-    pub green: u8,
-    pub blue: u8,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
 }
 
 pub struct Image {
@@ -16,17 +16,11 @@ pub struct Image {
 
 impl Image {
     pub fn new(width: i32, height: i32) -> Image {
+        let size = (width * height) as usize;
         Image {
             width,
             height,
-            pixels: vec![
-                Color {
-                    red: 0,
-                    blue: 0,
-                    green: 0
-                };
-                (width * height) as usize
-            ],
+            pixels: vec![Color { r: 0, g: 0, b: 0 }; size],
         }
     }
 
@@ -99,10 +93,10 @@ impl Image {
 
         // * Image
         for color in &self.pixels {
-            let Color { red, green, blue } = color;
-            file.write_all(&red.to_le_bytes())?;
-            file.write_all(&green.to_le_bytes())?;
-            file.write_all(&blue.to_le_bytes())?;
+            let Color { r, g, b } = color;
+            file.write_all(&r.to_le_bytes())?;
+            file.write_all(&g.to_le_bytes())?;
+            file.write_all(&b.to_le_bytes())?;
         }
 
         Ok(())
