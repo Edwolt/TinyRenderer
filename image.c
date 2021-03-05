@@ -1,6 +1,6 @@
 #include "image.h"
 
-Image* image_new(i32 width, i32 height) {
+Image* image_new(const i32 width, const i32 height) {
     Image* restrict image = malloc(sizeof(Image));
     if (!image) goto error;
 
@@ -18,15 +18,15 @@ error:
     return NULL;
 }
 
-void image_del(Image* restrict image) {
+void image_del(const Image* restrict image) {
     if (!image) return;
     free(image->pixels);
     free(image);
 }
 
-void image_clear(Image* restrict image, Color color) {
+void image_clear(Image* restrict image, const Color* restrict color) {
     for (int i = 0; i < image->width * image->height; i++) {
-        image->pixels[i] = color;
+        image->pixels[i] = *color;
     }
 }
 
