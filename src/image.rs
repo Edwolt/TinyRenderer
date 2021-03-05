@@ -1,6 +1,11 @@
 use std::fs::File;
 use std::io::Write;
 
+pub struct Point {
+    pub x: i32,
+    pub y: i32,
+}
+
 #[derive(Clone)]
 pub struct Color {
     pub r: u8,
@@ -24,13 +29,26 @@ impl Image {
         }
     }
 
-    pub fn set(&mut self, x: i32, y: i32, color: Color) {
-        self.pixels[(y * self.height + x) as usize] = color;
+    pub fn set(&mut self, p: &Point, color: &Color) {
+        self.pixels[(p.y * self.width + p.x) as usize] = color.clone();
     }
 
-    pub fn clear(&mut self, color: Color) {
+    pub fn clear(&mut self, color: &Color) {
         for i in 0..self.pixels.len() {
             self.pixels[i] = color.clone();
+        }
+    }
+
+    pub fn line(&mut self, p0: &Point, p1: &Point, color: &Color) {
+        let steps = 100;
+        let delta: f32 = 1f32 / (steps as f32);
+        for i in 0..steps {
+            let i = (i as f32) * delta;
+            let p = Point {
+                x: p0.x + (((p1.x - p0.x) as f32) * i) as i32,
+                y: p0.y + (((p1.y - p0.y) as f32) * i) as i32,
+            };
+            self.set(&p, &color);
         }
     }
 
@@ -79,8 +97,8 @@ impl Image {
 
         // Horizontal and vertical pixel per meter
         // (0 means no preference)
-        file.write_all(&0i16.to_le_bytes())?; // u16
-        file.write_all(&0i16.to_le_bytes())?; // u16
+        file.write_all(&0i32.to_le_bytes())?; // i32
+        file.write_all(&0i32.to_le_bytes())?; // i32
 
         // Number of color used
         // 0 means there is no palette
@@ -94,9 +112,9 @@ impl Image {
         // * Image
         for color in &self.pixels {
             let Color { r, g, b } = color;
-            file.write_all(&r.to_le_bytes())?;
-            file.write_all(&g.to_le_bytes())?;
             file.write_all(&b.to_le_bytes())?;
+            file.write_all(&g.to_le_bytes())?;
+            file.write_all(&r.to_le_bytes())?;
         }
 
         Ok(())
