@@ -40,11 +40,17 @@ impl Image {
 
     /// Draw a line from (x0, y0) to (x1, y1)
     pub fn line(&mut self, &Point(x0, y0): &Point, &Point(x1, y1): &Point, color: &Color) {
+        // Using Thales Theorem
+        // y = (x - x0) * ((y1 - y0) / x1 - x0) + y0
+        let q = ((y1 - y0) as f32) / ((x1 - x0) as f32);
+        let c = (-x0 as f32) * q + y0 as f32;
         for x in x0..x1 {
-            let t = ((x - x0) as f32) / ((x1 - x0) as f32);
-            let y = (y0 as f32) * (1.0 - t) + (y1 as f32) * t;
-            let y = y as i32;
-            self.set(&Point(x, y), &color);
+            let y = (x as f32) * q + c;
+            self.set(&Point(x, y as i32), &color);
+        }
+        for x in x1..x0 {
+            let y = (x as f32) * q + c;
+            self.set(&Point(x, y as i32), &color);
         }
     }
 
