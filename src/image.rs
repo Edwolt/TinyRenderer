@@ -40,17 +40,41 @@ impl Image {
 
     /// Draw a line from (x0, y0) to (x1, y1)
     pub fn line(&mut self, &Point(x0, y0): &Point, &Point(x1, y1): &Point, color: &Color) {
+        // if Δx > Δy { for x {...} } else { for y {...} }
+
         // Using Thales Theorem
-        // y = (x - x0) * ((y1 - y0) / x1 - x0) + y0
-        let q = ((y1 - y0) as f32) / ((x1 - x0) as f32);
-        let c = (-x0 as f32) * q + y0 as f32;
-        for x in x0..x1 {
-            let y = (x as f32) * q + c;
-            self.set(&Point(x, y as i32), &color);
-        }
-        for x in x1..x0 {
-            let y = (x as f32) * q + c;
-            self.set(&Point(x, y as i32), &color);
+        if (x1 - x0).abs() > (y1 - y0).abs() {
+            // y = (x - x0) * ((y1 - y0) / x1 - x0) + y0
+            let q = ((y1 - y0) as f32) / ((x1 - x0) as f32);
+            let c = (y0 as f32) - (x0 as f32) * q;
+
+            // If is left to right
+            for x in x0..x1 {
+                let y = (x as f32) * q + c;
+                self.set(&Point(x, y as i32), &color);
+            }
+
+            // If is right to left
+            for x in x1..x0 {
+                let y = (x as f32) * q + c;
+                self.set(&Point(x, y as i32), &color);
+            }
+        } else {
+            // x = (y - y0) * ((x1 - x0) / y1 - y0) + x0
+            let q = ((x1 - x0) as f32) / ((y1 - y0) as f32);
+            let c = (x0 as f32) - (y0 as f32) * q;
+
+            // If is left to right
+            for y in y0..y1 {
+                let x = (y as f32) * q + c;
+                self.set(&Point(x as i32, y as i32), &color);
+            }
+
+            // If is right to left
+            for y in y1..y0 {
+                let x = (y as f32) * q + c;
+                self.set(&Point(x as i32, y as i32), &color);
+            }
         }
     }
 
