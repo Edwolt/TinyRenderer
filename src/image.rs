@@ -40,40 +40,121 @@ impl Image {
 
     /// Draw a line from (x0, y0) to (x1, y1)
     pub fn line(&mut self, &Point(x0, y0): &Point, &Point(x1, y1): &Point, color: &Color) {
+        // I tried to explain why this works
+        // the idea is that e is the distance to the line
+        // from our pixel (x_, y_)
+
         // if Δx > Δy { for x {...} } else { for y {...} }
+        let dx = x1 - x0; // Δx
+        let dy = y1 - y0; // Δy
+        let flip = dy.abs() > dx.abs();
 
-        // Using Thales Theorem
-        if (x1 - x0).abs() > (y1 - y0).abs() {
-            // y = (x - x0) * ((y1 - y0) / x1 - x0) + y0
-            let q = ((y1 - y0) as f32) / ((x1 - x0) as f32);
-            let c = (y0 as f32) - (x0 as f32) * q;
+        if dx == 0 && dy == 0 {
+            // Trivial! It's a point because (x0, y0) = (x1, y1)
+            self.set(&Point(x0, y0), color);
+        } else if !flip {
+            // |Δx| > |Δy|
 
-            // If is left to right
-            for x in x0..x1 {
-                let y = (x as f32) * q + c;
-                self.set(&Point(x, y as i32), &color);
+            // Define round(x), with x ∈ ℝ as the nearest integer to x
+
+            // We want to draw the line r on the screen
+
+            // r' is the set of pixels of screen
+            // that will be draw to make the line
+
+            // for all x' ∈ ℤ that (x', y) ∈ r
+            // implies that (x', y') ∈ r' with y' = round(y)
+
+            // a is the line coefficient, then
+            // r = {(x, y) | y = a*x + b }
+            let a = (dy as f32) / (dx as f32);
+            // Notice that dx can't be 0,
+            // otherwise flip is true
+            // or dy is 0 creating a point
+
+            // if points P=(xp, yp) ∈ r and Q=(xq, yq) ∈ r then
+            // |xq - xp| = 1 => |yq - yp| = a,
+            // ie If x varies 1, then y varies a
+
+            let mut y_ = y0; // y'
+
+            // We will make y = y' + e
+            let mut e = 0.0;
+
+            // x0 <= x1: drawing from left to right
+            for x_ in x0..=x1 {
+                // Draw the pixel (x_, y_)
+                self.set(&Point(x_, y_), &color);
+
+                // x will increases 1, then y will increases a
+                e = if dy > 0 { e + a } else { e - a };
+
+                // if |e| > 0.5 it means that the value of e is wrong
+                // and need to be updated
+
+                if e > 0.5 {
+                    e -= 1.0;
+                    y_ += 1;
+                } else if e < -0.5 {
+                    e += 1.0;
+                    y_ -= 1;
+                }
             }
 
-            // If is right to left
-            for x in x1..x0 {
-                let y = (x as f32) * q + c;
-                self.set(&Point(x, y as i32), &color);
+            let mut y_ = y1;
+            let mut e = 0.0;
+
+            // x0 >= x1: drawing from left to right
+            for x_ in x1..=x0 {
+                self.set(&Point(x_, y_), &color);
+
+                e = if dy < 0 { e + a } else { e - a };
+
+                if e > 0.5 {
+                    e -= 1.0;
+                    y_ += 1;
+                } else if e < -0.5 {
+                    e += 1.0;
+                    y_ -= 1;
+                }
             }
         } else {
-            // x = (y - y0) * ((x1 - x0) / y1 - y0) + x0
-            let q = ((x1 - x0) as f32) / ((y1 - y0) as f32);
-            let c = (x0 as f32) - (y0 as f32) * q;
+            // The same as !flip, but switching x and y
+            // Making it work like the image was traposed
+            // keep self.set(&Point(x_, y_), ...)
 
-            // If is left to right
-            for y in y0..y1 {
-                let x = (y as f32) * q + c;
-                self.set(&Point(x as i32, y as i32), &color);
+            let a = (dx as f32) / (dy as f32);
+            let mut x_ = x0;
+            let mut e = 0.0;
+            for y_ in y0..=y1 {
+                self.set(&Point(x_, y_), &color);
+
+                e = if dx > 0 { e + a } else { e - a };
+
+                if e > 0.5 {
+                    e -= 1.0;
+                    x_ += 1;
+                } else if e < -0.5 {
+                    e += 1.0;
+                    x_ -= 1;
+                }
             }
 
-            // If is right to left
-            for y in y1..y0 {
-                let x = (y as f32) * q + c;
-                self.set(&Point(x as i32, y as i32), &color);
+            let mut x_ = x1;
+            let mut e = 0.0;
+
+            for y_ in y1..=y0 {
+                self.set(&Point(x_, y_), &color);
+
+                e = if dx < 0 { e + a } else { e - a };
+
+                if e > 0.5 {
+                    e -= 1.0;
+                    x_ += 1;
+                } else if e < -0.5 {
+                    e += 1.0;
+                    x_ -= 1;
+                }
             }
         }
     }
