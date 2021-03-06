@@ -43,15 +43,13 @@ impl Image {
 
     /// Draw a line from p0 to p1
     pub fn line(&mut self, p0: &Point, p1: &Point, color: &Color) {
-        let steps = 100;
-        let delta: f32 = 1f32 / (steps as f32);
-        for i in 0..steps {
-            let i = (i as f32) * delta;
-            let p = Point {
-                x: p0.x + (((p1.x - p0.x) as f32) * i) as i32,
-                y: p0.y + (((p1.y - p0.y) as f32) * i) as i32,
-            };
-            self.set(&p, &color);
+        let Point { x: x0, y: y0 } = p0;
+        let Point { x: x1, y: y1 } = p1;
+        for x in p0.x..p1.x {
+            let t = ((x - x0) as f32) / ((x1 - x0) as f32);
+            let y = (*y0 as f32) * (1.0 - t) + (*y1 as f32) * t;
+            let y = y as i32;
+            self.set(&Point { x, y }, &color);
         }
     }
 
