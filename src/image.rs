@@ -1,10 +1,7 @@
 use std::fs::File;
 use std::io::Write;
 
-pub struct Point {
-    pub x: i32,
-    pub y: i32,
-}
+pub struct Point(pub i32, pub i32);
 
 #[derive(Clone)]
 pub struct Color {
@@ -30,8 +27,8 @@ impl Image {
     }
 
     /// Set the value of pixel at (p.x, p.y) to color
-    pub fn set(&mut self, p: &Point, color: &Color) {
-        self.pixels[(p.y * self.width + p.x) as usize] = color.clone();
+    pub fn set(&mut self, &Point(x, y): &Point, color: &Color) {
+        self.pixels[(y * self.width + x) as usize] = color.clone();
     }
 
     /// Set all image's pixels to color
@@ -41,15 +38,13 @@ impl Image {
         }
     }
 
-    /// Draw a line from p0 to p1
-    pub fn line(&mut self, p0: &Point, p1: &Point, color: &Color) {
-        let Point { x: x0, y: y0 } = p0;
-        let Point { x: x1, y: y1 } = p1;
-        for x in p0.x..p1.x {
+    /// Draw a line from (x0, y0) to (x1, y1)
+    pub fn line(&mut self, &Point(x0, y0): &Point, &Point(x1, y1): &Point, color: &Color) {
+        for x in x0..x1 {
             let t = ((x - x0) as f32) / ((x1 - x0) as f32);
-            let y = (*y0 as f32) * (1.0 - t) + (*y1 as f32) * t;
+            let y = (y0 as f32) * (1.0 - t) + (y1 as f32) * t;
             let y = y as i32;
-            self.set(&Point { x, y }, &color);
+            self.set(&Point(x, y), &color);
         }
     }
 

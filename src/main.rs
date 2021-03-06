@@ -15,10 +15,10 @@ fn main() {
     let black = Color { r: 0, g: 0, b: 0 };
 
     image.clear(&black);
-    image.line(&Point { x: 0, y: 0 }, &Point { x: 100, y: 100 }, &blue);
-    image.line(&Point { x: 13, y: 20 }, &Point { x: 80, y: 40 }, &white);
-    image.line(&Point { x: 20, y: 13 }, &Point { x: 40, y: 80 }, &red);
-    image.line(&Point { x: 85, y: 45 }, &Point { x: 17, y: 25 }, &red);
+    image.line(&Point(0, 0), &Point(100, 100), &blue);
+    image.line(&Point(13, 20), &Point(80, 40), &white);
+    image.line(&Point(20, 13), &Point(40, 80), &red);
+    image.line(&Point(85, 45), &Point(17, 25), &red);
 
     match image.save("img.bmp") {
         Ok(()) => println!("Imagem criada com sucesso"),
