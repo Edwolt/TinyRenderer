@@ -29,16 +29,19 @@ impl Image {
         }
     }
 
+    /// Set the value of pixel at (p.x, p.y) to color
     pub fn set(&mut self, p: &Point, color: &Color) {
         self.pixels[(p.y * self.width + p.x) as usize] = color.clone();
     }
 
+    /// Set all image's pixels to color
     pub fn clear(&mut self, color: &Color) {
         for i in 0..self.pixels.len() {
             self.pixels[i] = color.clone();
         }
     }
 
+    /// Draw a line from p0 to p1
     pub fn line(&mut self, p0: &Point, p1: &Point, color: &Color) {
         let steps = 100;
         let delta: f32 = 1f32 / (steps as f32);
@@ -52,6 +55,7 @@ impl Image {
         }
     }
 
+    /// Save the image as a bitmap
     pub fn save(&self, path: &str) -> std::io::Result<()> {
         let mut file = File::create(path)?;
 
