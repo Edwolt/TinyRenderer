@@ -28,7 +28,9 @@ impl Image {
 
     /// Set the value of pixel at (p.x, p.y) to color
     pub fn set(&mut self, &Point(x, y): &Point, color: &Color) {
-        self.pixels[(y * self.width + x) as usize] = color.clone();
+        if 0 <= x && x < self.width && 0 <= y && y < self.height {
+            self.pixels[(y * self.width + x) as usize] = color.clone();
+        }
     }
 
     /// Set all image's pixels to color
