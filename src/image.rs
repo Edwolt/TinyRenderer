@@ -40,6 +40,13 @@ impl Image {
 
     /// Draw a line from (x0, y0) to (x1, y1)
     pub fn line(&mut self, &Point(x0, y0): &Point, &Point(x1, y1): &Point, color: &Color) {
+        // This is my implementation of
+        // Bresenham’s Line Drawing Algorithm
+        // (or at least something close)
+        // There's no floating point arithmetic
+        // (I coded this trying to understand why the algorithm in
+        // the wiki works, but the algorithm in the wiki is simpler)
+
         // I tried to explain why this works
         // the idea is that e is the distance to the line
         // from our pixel (x_, y_)
@@ -47,6 +54,8 @@ impl Image {
         // if Δx > Δy { for x {...} } else { for y {...} }
         let dx = x1 - x0; // Δx
         let dy = y1 - y0; // Δy
+
+        // if height > width, draw walking through y axis
         let flip = dy.abs() > dx.abs();
 
         if dx == 0 && dy == 0 {
@@ -65,12 +74,16 @@ impl Image {
             // for all x' ∈ ℤ that (x', y) ∈ r
             // implies that (x', y') ∈ r' with y' = round(y)
 
+            // a = Δy / Δx
             // a is the line coefficient, then
             // r = {(x, y) | y = a*x + b }
-            let a = (dy as f32) / (dx as f32);
+
+            // a2 = a * 2*Δx = 2*Δy
+            let a2 = 2 * dy;
+
             // Notice that dx can't be 0,
             // otherwise flip is true
-            // or dy is 0 creating a point
+            // or dy is 0 implying it's a point
 
             // if points P=(xp, yp) ∈ r and Q=(xq, yq) ∈ r then
             // |xq - xp| = 1 => |yq - yp| = a,
@@ -78,8 +91,9 @@ impl Image {
 
             let mut y_ = y0; // y'
 
-            // We will make y = y' + e
-            let mut e = 0.0;
+            // We will make e always satisfy y = y' + e
+            // e2 = e * 2*Δx
+            let mut e2 = 0;
 
             // x0 <= x1: drawing from left to right
             for x_ in x0..=x1 {
@@ -87,72 +101,89 @@ impl Image {
                 self.set(&Point(x_, y_), &color);
 
                 // x will increases 1, then y will increases a
-                e = if dy > 0 { e + a } else { e - a };
+                // Then we need to update e using following
+                // line of code:
+                // `e = if dy > 0 { e + a } else { e - a }`
+                // Using e2 and a2 we gets this:
+                e2 = if dy > 0 { e2 + a2 } else { e2 - a2 };
 
                 // if |e| > 0.5 it means that the value of e is wrong
                 // and need to be updated
 
-                if e > 0.5 {
-                    e -= 1.0;
+                if e2 > dx {
+                    // `if e > 0.5`
+                    // Because Δx > 0: `if e * 2*dx > 0.5 * 2*dx`
+                    // that is the same of `if e2 > dx`
+
+                    e2 -= 2 * dx; // `e -= 1.0`;
                     y_ += 1;
-                } else if e < -0.5 {
-                    e += 1.0;
+                } else if e2 < -dx {
+                    // `else if e < -0.5`
+                    // Because Δx > 0: `else if e * 2*dx < -0.5 * 2*dx`
+                    // that is the same of `else if e2 < -dx`
+
+                    e2 += 2 * dx; // e += 1.0;
                     y_ -= 1;
                 }
             }
 
             let mut y_ = y1;
-            let mut e = 0.0;
+            let mut e2 = 0;
 
             // x0 >= x1: drawing from left to right
             for x_ in x1..=x0 {
                 self.set(&Point(x_, y_), &color);
 
-                e = if dy < 0 { e + a } else { e - a };
+                e2 = if dy < 0 { e2 + a2 } else { e2 - a2 };
 
-                if e > 0.5 {
-                    e -= 1.0;
+                if e2 < dx {
+                    // `if e > 0.5`
+                    // Because Δx < 0: `if e * 2*dx < 0.5 * 2*dx`
+                    // that is the samr of `if e2 < dx`
+
+                    e2 -= 2 * dx;
                     y_ += 1;
-                } else if e < -0.5 {
-                    e += 1.0;
+                } else if e2 > -dx {
+                    // `else if e < -0.5`
+                    // Because Δx > 0: `else if e * 2*dx > -0.5 * 2*dx`
+                    // that is the same of `else if e2 < -dx
+
+                    e2 += 2 * dx;
                     y_ -= 1;
                 }
             }
         } else {
-            // The same as !flip, but switching x and y
-            // Making it work like the image was traposed
+            // The same as logic that !flip, but switching x and y
             // keep self.set(&Point(x_, y_), ...)
 
-            let a = (dx as f32) / (dy as f32);
+            let a2 = 2 * dx;
+
             let mut x_ = x0;
-            let mut e = 0.0;
+            let mut e2 = 0;
             for y_ in y0..=y1 {
                 self.set(&Point(x_, y_), &color);
 
-                e = if dx > 0 { e + a } else { e - a };
-
-                if e > 0.5 {
-                    e -= 1.0;
+                e2 = if dx > 0 { e2 + a2 } else { e2 - a2 };
+                if e2 > dy {
+                    e2 -= 2 * dy; // `e -= 1.0`;
                     x_ += 1;
-                } else if e < -0.5 {
-                    e += 1.0;
+                } else if e2 < -dy {
+                    e2 += 2 * dy; // e += 1.0;
                     x_ -= 1;
                 }
             }
 
             let mut x_ = x1;
-            let mut e = 0.0;
-
+            let mut e2 = 0;
             for y_ in y1..=y0 {
                 self.set(&Point(x_, y_), &color);
 
-                e = if dx < 0 { e + a } else { e - a };
-
-                if e > 0.5 {
-                    e -= 1.0;
+                e2 = if dx < 0 { e2 + a2 } else { e2 - a2 };
+                if e2 < dy {
+                    e2 -= 2 * dy;
                     x_ += 1;
-                } else if e < -0.5 {
-                    e += 1.0;
+                } else if e2 > -dy {
+                    e2 += 2 * dy;
                     x_ -= 1;
                 }
             }
