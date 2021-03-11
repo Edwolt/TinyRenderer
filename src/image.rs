@@ -93,8 +93,8 @@ impl Image {
 
             let mut y_ = y0; // y'
 
-            // We will make e always satisfy y = y' + e
-            // e2 = e * 2*Δx
+            // We will make e always satisfy y = y' + e or y = y' - e
+            // e2 = |e| * 2*Δx
             let mut e2 = 0;
 
             // x0 <= x1: drawing from left to right
@@ -107,7 +107,7 @@ impl Image {
                 // line of code:
                 // `e = if dy > 0 { e + a } else { e - a }`
                 // Using e2 and a2 we gets this:
-                e2 = if dy > 0 { e2 + a2 } else { e2 - a2 };
+                e2 += a2;
 
                 // if |e| > 0.5 it means that the value of e is wrong
                 // and need to be updated
@@ -118,14 +118,7 @@ impl Image {
                     // that is the same of `if e2 > dx`
 
                     e2 -= 2 * dx; // `e -= 1.0`;
-                    y_ += 1;
-                } else if e2 < -dx {
-                    // `else if e < -0.5`
-                    // Because Δx > 0: `else if e * 2*dx < -0.5 * 2*dx`
-                    // that is the same of `else if e2 < -dx`
-
-                    e2 += 2 * dx; // e += 1.0;
-                    y_ -= 1;
+                    y_ = if dy > 0 { y_ + 1 } else { y_ - 1 };
                 }
             }
 
@@ -136,7 +129,7 @@ impl Image {
             for x_ in x1..=x0 {
                 self.set(&Point(x_, y_), &color);
 
-                e2 = if dy < 0 { e2 + a2 } else { e2 - a2 };
+                e2 += a2;
 
                 if e2 < dx {
                     // `if e > 0.5`
@@ -144,14 +137,7 @@ impl Image {
                     // that is the samr of `if e2 < dx`
 
                     e2 -= 2 * dx;
-                    y_ += 1;
-                } else if e2 > -dx {
-                    // `else if e < -0.5`
-                    // Because Δx > 0: `else if e * 2*dx > -0.5 * 2*dx`
-                    // that is the same of `else if e2 < -dx
-
-                    e2 += 2 * dx;
-                    y_ -= 1;
+                    y_ = if dy < 0 { y_ + 1 } else { y_ - 1 };
                 }
             }
         } else {
@@ -165,13 +151,10 @@ impl Image {
             for y_ in y0..=y1 {
                 self.set(&Point(x_, y_), &color);
 
-                e2 = if dx > 0 { e2 + a2 } else { e2 - a2 };
+                e2 += a2;
                 if e2 > dy {
                     e2 -= 2 * dy; // `e -= 1.0`;
-                    x_ += 1;
-                } else if e2 < -dy {
-                    e2 += 2 * dy; // e += 1.0;
-                    x_ -= 1;
+                    x_ = if dx > 0 { x_ + 1 } else { x_ - 1 };
                 }
             }
 
@@ -180,13 +163,10 @@ impl Image {
             for y_ in y1..=y0 {
                 self.set(&Point(x_, y_), &color);
 
-                e2 = if dx < 0 { e2 + a2 } else { e2 - a2 };
+                e2 += a2;
                 if e2 < dy {
                     e2 -= 2 * dy;
-                    x_ += 1;
-                } else if e2 > -dy {
-                    e2 += 2 * dy;
-                    x_ -= 1;
+                    x_ = if dx < 0 { x_ + 1 } else { x_ - 1 };
                 }
             }
         }
