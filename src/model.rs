@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::Read;
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Vertex {
     pub x: f64,
     pub y: f64,
@@ -74,8 +74,7 @@ impl Model {
                     } else {
                         assert!((model.vertices.len() as isize) - index > 0);
                         ((model.vertices.len() as isize) - index) as usize
-                    } - 1]
-                        .clone(),
+                    } - 1],
                 )
             }
         }

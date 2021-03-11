@@ -1,9 +1,10 @@
 use std::fs::File;
 use std::io::Write;
 
+#[derive(Copy, Clone)]
 pub struct Point(pub i32, pub i32);
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
@@ -27,7 +28,7 @@ impl Image {
     }
 
     /// Set the value of pixel at (p.x, p.y) to color
-    pub fn set(&mut self, &Point(x, y): &Point, color: &Color) {
+    pub fn set(&mut self, Point(x, y): Point, color: Color) {
         if 0 <= x && x < self.width && 0 <= y && y < self.height {
             self.pixels[(y * self.width + x) as usize] = color.clone();
         }
@@ -41,7 +42,7 @@ impl Image {
     }
 
     /// Draw a line from (x0, y0) to (x1, y1)
-    pub fn line(&mut self, &Point(x0, y0): &Point, &Point(x1, y1): &Point, color: &Color) {
+    pub fn line(&mut self, Point(x0, y0): Point, Point(x1, y1): Point, color:Color) {
         // This is my implementation of
         // Bresenham’s Line Drawing Algorithm
         // (or at least something close)
@@ -62,7 +63,7 @@ impl Image {
 
         if dx == 0 && dy == 0 {
             // Trivial! It's a point because (x0, y0) = (x1, y1)
-            self.set(&Point(x0, y0), color);
+            self.set(Point(x0, y0), color);
         } else if !flip {
             // |Δx| > |Δy|
 
@@ -100,7 +101,7 @@ impl Image {
             // x0 <= x1: drawing from left to right
             for x_ in x0..=x1 {
                 // Draw the pixel (x_, y_)
-                self.set(&Point(x_, y_), &color);
+                self.set(Point(x_, y_), color);
 
                 // x will increases 1, then y will increases a
                 // Then we need to update e using following
@@ -127,7 +128,7 @@ impl Image {
 
             // x0 >= x1: drawing from left to right
             for x_ in x1..=x0 {
-                self.set(&Point(x_, y_), &color);
+                self.set(Point(x_, y_), color);
 
                 e2 += a2;
 
@@ -149,7 +150,7 @@ impl Image {
             let mut x_ = x0;
             let mut e2 = 0;
             for y_ in y0..=y1 {
-                self.set(&Point(x_, y_), &color);
+                self.set(Point(x_, y_), color);
 
                 e2 += a2;
                 if e2 > dy {
@@ -161,7 +162,7 @@ impl Image {
             let mut x_ = x1;
             let mut e2 = 0;
             for y_ in y1..=y0 {
-                self.set(&Point(x_, y_), &color);
+                self.set(Point(x_, y_), color);
 
                 e2 += a2;
                 if e2 < dy {
