@@ -3,6 +3,9 @@ use image::Color;
 use image::Image;
 use image::Point;
 
+mod model;
+use model::Model;
+
 const BLACK: Color = Color {
     r: 000,
     g: 000,
@@ -42,6 +45,18 @@ const WHITE: Color = Color {
 fn main() {
     let mut image = Image::new(100, 100);
 
+    let model = Model::new("obj/african_head.obj").expect("Can't open model");
+    for i in model.vertices {
+        println!("Vertex: {} {} {}", i.x, i.y, i.z)
+    }
+    for vertices in model.faces {
+        println!("Face: ");
+        
+        for i in vertices {
+            println!("\t[{} {} {}] ", i.x, i.y, i.z)
+        }
+    }
+
     image.clear(&BLACK);
     image.line(&Point(0, 0), &Point(99, 99), &WHITE);
     image.line(&Point(0, 0), &Point(0, 99), &GREEN);
@@ -55,8 +70,6 @@ fn main() {
     image.line(&Point(80, 45), &Point(13, 25), &CYAN);
     image.line(&Point(45, 80), &Point(25, 13), &YELLOW);
 
-    match image.save("img.bmp") {
-        Ok(()) => println!("Imagem criada com sucesso"),
-        Err(e) => eprintln!("Error: {:?}", e),
-    }
+    image.save("img.bmp").expect("Can't save the image");
+    println!("Image created with success");
 }

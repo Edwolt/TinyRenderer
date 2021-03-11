@@ -1,5 +1,8 @@
 # BitMap files
 *.bmp
 
+# Wavefront OBJ File
+obj/
+
 # Rust Files
 /target
