@@ -50,33 +50,37 @@ impl Model {
                         .expect("Invalid Wavefront Obj: Vertex coordinate should be a float"),
                 }),
                 Some("f") => {
-                    faces_index.push(Vec::new());
-                    for i in data {
-                        faces_index.last_mut().unwrap().push(
-                            i.split("/")
-                                .next()
-                                .expect("Invalid Wavefront Obj: Face should have a Vertex ")
-                                .parse::<isize>()
-                                .expect("Invalid Wavefront Obj: The Face's vertex index sohuld be a integer"),
-                        );
-                    }
+                    faces_index.push(
+                        data.map(|index| {
+                                index
+                                    .split("/")
+                                    .next()
+                                    .expect("Invalid Wavefront Obj: The Face's vertex index should be a integer")
+                                    .parse::<isize>()
+                                    .expect("Invalid Wavefront Obj: The Face's vertex index should be a integer")
+                            }
+                        ).collect::<Vec<isize>>()
+                    );
                 }
                 _ => continue,
             }
         }
 
         for face in faces_index {
-            model.faces.push(Vec::new());
-            for index in face {
-                model.faces.last_mut().unwrap().push(
-                    model.vertices[if index > 0 {
-                        index as usize
-                    } else {
-                        assert!((model.vertices.len() as isize) - index > 0);
-                        ((model.vertices.len() as isize) - index) as usize
-                    } - 1],
-                )
-            }
+            model.faces.push(
+                face.iter()
+                    .map(|index| {
+                        let index = if *index > 0 {
+                            *index as usize
+                        } else {
+                            let i = (model.vertices.len() as isize) - *index;
+                            assert!(i > 0, "Invalid Wavefront Obj: Invalid Vertex index");
+                            i as usize
+                        };
+                        model.vertices[index - 1]
+                    })
+                    .collect::<Vec<Vertex>>(),
+            );
         }
 
         Ok(model)

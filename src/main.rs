@@ -51,7 +51,7 @@ fn main() {
     }
     for vertices in model.faces {
         println!("Face: ");
-        
+
         for i in vertices {
             println!("\t[{} {} {}] ", i.x, i.y, i.z)
         }

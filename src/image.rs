@@ -42,7 +42,7 @@ impl Image {
     }
 
     /// Draw a line from (x0, y0) to (x1, y1)
-    pub fn line(&mut self, Point(x0, y0): Point, Point(x1, y1): Point, color:Color) {
+    pub fn line(&mut self, Point(x0, y0): Point, Point(x1, y1): Point, color: Color) {
         // This is my implementation of
         // Bresenham’s Line Drawing Algorithm
         // (or at least something close)
