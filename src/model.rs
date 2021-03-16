@@ -1,12 +1,27 @@
 use std::fs::File;
 use std::io::Read;
 
+use crate::image::Color;
+use crate::image::Image;
+use crate::image::Point;
+
 #[derive(Copy, Clone)]
 pub struct Vertex {
     pub x: f64,
     pub y: f64,
     pub z: f64,
     // w: f64,
+}
+
+impl Vertex {
+    fn to_point(&self, width: i32, height: i32) -> Point {
+        let x = (self.x + 1f64) * (width as f64) / 2f64;
+        let y = (self.y + 1f64) * (height as f64) / 2f64;
+        Point {
+            x: x as i32,
+            y: y as i32,
+        }
+    }
 }
 
 pub struct Model {
@@ -84,5 +99,22 @@ impl Model {
         }
 
         Ok(model)
+    }
+
+    pub fn wireframe_render(&self, image: &mut Image, color: Color) {
+        for face in &self.faces {
+            let mut v = match face.last() {
+                Some(v) => v,
+                None => continue,
+            };
+            for u in face {
+                image.line(
+                    v.to_point(image.width, image.height),
+                    u.to_point(image.width, image.height),
+                    color,
+                );
+                v = u;
+            }
+        }
     }
 }
