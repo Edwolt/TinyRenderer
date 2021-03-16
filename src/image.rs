@@ -2,7 +2,10 @@ use std::fs::File;
 use std::io::Write;
 
 #[derive(Copy, Clone)]
-pub struct Point(pub i32, pub i32);
+pub struct Point {
+    pub x: i32,
+    pub y: i32,
+}
 
 #[derive(Copy, Clone)]
 pub struct Color {
@@ -28,21 +31,26 @@ impl Image {
     }
 
     /// Set the value of pixel at (p.x, p.y) to color
-    pub fn set(&mut self, Point(x, y): Point, color: Color) {
+    pub fn set(&mut self, Point { x, y }: Point, color: Color) {
         if 0 <= x && x < self.width && 0 <= y && y < self.height {
-            self.pixels[(y * self.width + x) as usize] = color.clone();
+            self.pixels[(y * self.width + x) as usize] = color;
         }
     }
 
     /// Set all image's pixels to color
-    pub fn clear(&mut self, color: &Color) {
+    pub fn clear(&mut self, color: Color) {
         for i in 0..self.pixels.len() {
-            self.pixels[i] = color.clone();
+            self.pixels[i] = color;
         }
     }
 
     /// Draw a line from (x0, y0) to (x1, y1)
-    pub fn line(&mut self, Point(x0, y0): Point, Point(x1, y1): Point, color: Color) {
+    pub fn line(
+        &mut self,
+        Point { x: x0, y: y0 }: Point,
+        Point { x: x1, y: y1 }: Point,
+        color: Color,
+    ) {
         // This is my implementation of
         // Bresenham’s Line Drawing Algorithm
         // (or at least something close)
@@ -63,7 +71,7 @@ impl Image {
 
         if dx == 0 && dy == 0 {
             // Trivial! It's a point because (x0, y0) = (x1, y1)
-            self.set(Point(x0, y0), color);
+            self.set(Point { x: x0, y: y0 }, color);
         } else if !flip {
             // |Δx| > |Δy|
 
@@ -82,7 +90,8 @@ impl Image {
             // r = {(x, y) | y = a*x + b }
 
             // a2 = a * 2*Δx = 2*Δy
-            let a2 = 2 * dy;
+            // a3 = |a2| = 2*|Δy|
+            let a3 = 2 * dy.abs();
 
             // Notice that dx can't be 0,
             // otherwise flip is true
@@ -95,79 +104,104 @@ impl Image {
             let mut y_ = y0; // y'
 
             // We will make e always satisfy y = y' + e or y = y' - e
-            // e2 = |e| * 2*Δx
-            let mut e2 = 0;
+            // e2 = e * 2*Δx
+
+            // e3 = e2, if Δx > 0
+            // e3 = -e2, otherwise
+            // e3 grows when y' is more distant from y,
+            // don't matter if y' > y or y' < y
+            let mut e3 = 0;
 
             // x0 <= x1: drawing from left to right
+            // Δx > 0
             for x_ in x0..=x1 {
                 // Draw the pixel (x_, y_)
-                self.set(Point(x_, y_), color);
+                self.set(Point { x: x_, y: y_ }, color);
 
                 // x will increases 1, then y will increases a
                 // Then we need to update e using following
                 // line of code:
                 // `e = if dy > 0 { e + a } else { e - a }`
                 // Using e2 and a2 we gets this:
-                e2 += a2;
+                // `e2 = if dy > 0 { e2 + a2 } else { e2 - a2 }`
+                // Using e3 and a2 we get this:
+                e3 += a3;
 
                 // if |e| > 0.5 it means that the value of e is wrong
                 // and need to be updated
 
-                if e2 > dx {
-                    // `if e > 0.5`
-                    // Because Δx > 0: `if e * 2*dx > 0.5 * 2*dx`
-                    // that is the same of `if e2 > dx`
+                // |e| > 0.5 => |e * 2*Δx| > |0.5 * 2*Δx| => |e2| > |Δx|
+                // => e3 > |dx|
 
-                    e2 -= 2 * dx; // `e -= 1.0`;
+                // ```
+                // if e > 0.5 {
+                //     e -= 1.0;
+                //     y_ += 1;
+                // } else if e < -0.5 {
+                //     e += 1.0;
+                //     y_ -= 1;
+                // }
+                // ```
+
+                // ```
+                // if e2 > dx {  // `>` Because Δx > 0
+                //     e2 -= 2 * dx; // `e -= 1.0`;
+                //     y_ += 1;
+                // } else if e2 < -dx {  // `<` Because Δx < 0
+                //     e2 += 2 * dx; // e += 1.0;
+                //     y_ -= 1;
+                // }
+                // ```
+
+                // e3 > |Δx|
+                if e3 > dx {
+                    e3 -= 2 * dx; // 2*|Δx|
                     y_ = if dy > 0 { y_ + 1 } else { y_ - 1 };
                 }
             }
 
             let mut y_ = y1;
-            let mut e2 = 0;
+            let mut e3 = 0;
 
             // x0 >= x1: drawing from left to right
+            // Δx < 0
             for x_ in x1..=x0 {
-                self.set(Point(x_, y_), color);
+                self.set(Point { x: x_, y: y_ }, color);
 
-                e2 += a2;
+                e3 += a3;
 
-                if e2 < dx {
-                    // `if e > 0.5`
-                    // Because Δx < 0: `if e * 2*dx < 0.5 * 2*dx`
-                    // that is the samr of `if e2 < dx`
-
-                    e2 -= 2 * dx;
-                    y_ = if dy < 0 { y_ + 1 } else { y_ - 1 };
+                // e3 > |Δx|
+                if e3 > -dx {
+                    e3 += 2 * dx; // 2*|Δx|
+                    y_ = if dy > 0 { y_ - 1 } else { y_ + 1 };
                 }
             }
         } else {
             // The same as logic that !flip, but switching x and y
-            // keep self.set(&Point(x_, y_), ...)
+            // keep self.set(&Point{ x: x_, y: y_ }, ...)
 
-            let a2 = 2 * dx;
+            let a3 = 2 * dx.abs();
 
             let mut x_ = x0;
-            let mut e2 = 0;
+            let mut e3 = 0;
             for y_ in y0..=y1 {
-                self.set(Point(x_, y_), color);
-
-                e2 += a2;
-                if e2 > dy {
-                    e2 -= 2 * dy; // `e -= 1.0`;
+                self.set(Point { x: x_, y: y_ }, color);
+                e3 += a3;
+                if e3 > dy {
+                    e3 -= 2 * dy;
                     x_ = if dx > 0 { x_ + 1 } else { x_ - 1 };
                 }
             }
 
             let mut x_ = x1;
-            let mut e2 = 0;
+            let mut e3 = 0;
             for y_ in y1..=y0 {
-                self.set(Point(x_, y_), color);
+                self.set(Point { x: x_, y: y_ }, color);
 
-                e2 += a2;
-                if e2 < dy {
-                    e2 -= 2 * dy;
-                    x_ = if dx < 0 { x_ + 1 } else { x_ - 1 };
+                e3 += a3;
+                if e3 > -dy {
+                    e3 += 2 * dy;
+                    x_ = if dx > 0 { x_ - 1 } else { x_ + 1 };
                 }
             }
         }
