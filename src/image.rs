@@ -1,17 +1,61 @@
 use std::fs::File;
 use std::io::Write;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Point {
     pub x: i32,
     pub y: i32,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
     pub b: u8,
+}
+
+const fn char_to_hex(val: u8) -> Result<u8, ()> {
+    if b'0' <= val && val <= b'9' {
+        Ok(val - b'0')
+    } else if b'a' <= val && val <= b'f' {
+        Ok(val - b'a' + 10)
+    } else if b'A' <= val && val <= b'F' {
+        Ok(val - b'A' + 10)
+    } else {
+        Err(())
+    }
+}
+
+impl Color {
+    pub fn hex(value: &str) -> Color {
+        let error_msg = "Color hexadecimal value must follow this format #HHH or #HHHHHH";
+
+        let mut chars = value.bytes();
+        assert!(chars.next().expect(error_msg) == b'#', error_msg);
+
+        let mut r: u8;
+        let mut g: u8;
+        let mut b: u8;
+        r = char_to_hex(chars.next().expect(error_msg)).expect(error_msg);
+        g = char_to_hex(chars.next().expect(error_msg)).expect(error_msg);
+        b = char_to_hex(chars.next().expect(error_msg)).expect(error_msg);
+        if let Some(tmp) = chars.next() {
+            r = (r << 4) + g;
+            g = (b << 4) + tmp;
+            b = char_to_hex(chars.next().expect(error_msg)).expect(error_msg);
+            b <<= 4;
+            b += char_to_hex(chars.next().expect(error_msg)).expect(error_msg);
+            if !chars.next().is_none() {
+                panic!(error_msg);
+            }
+        } else {
+            r = (r << 4) + r;
+            g = (g << 4) + g;
+            b = (b << 4) + b;
+        }
+
+        Color { r, g, b }
+    }
 }
 
 pub struct Image {

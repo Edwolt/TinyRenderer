@@ -5,7 +5,7 @@ use crate::image::Color;
 use crate::image::Image;
 use crate::image::Point;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Vertex {
     pub x: f64,
     pub y: f64,
