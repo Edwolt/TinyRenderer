@@ -50,19 +50,19 @@ impl Model {
                 Some("v") => model.vertices.push(Vertex {
                     x: data
                         .next()
-                        .expect("Invalid Wavefront Obj: Vertex should have x coordinate")
+                        .expect("Invalid Wavefront Obj: Vertex must have x coordinate")
                         .parse::<f64>()
-                        .expect("Invalid Wavefront Obj: Vertex coordinate should be a float"),
+                        .expect("Invalid Wavefront Obj: Vertex coordinate must be a float"),
                     y: data
                         .next()
-                        .expect("Invalid Wavefront Obj: Vertex should have y coordinate")
+                        .expect("Invalid Wavefront Obj: Vertex must have y coordinate")
                         .parse::<f64>()
-                        .expect("Invalid Wavefront Obj: Vertex coordinate should be a float"),
+                        .expect("Invalid Wavefront Obj: Vertex coordinate must be a float"),
                     z: data
                         .next()
-                        .expect("Invalid Wavefront Obj: Vertex should have z coordinate")
+                        .expect("Invalid Wavefront Obj: Vertex must have z coordinate")
                         .parse::<f64>()
-                        .expect("Invalid Wavefront Obj: Vertex coordinate should be a float"),
+                        .expect("Invalid Wavefront Obj: Vertex coordinate must be a float"),
                 }),
                 Some("f") => {
                     faces_index.push(
@@ -70,9 +70,9 @@ impl Model {
                                 index
                                     .split("/")
                                     .next()
-                                    .expect("Invalid Wavefront Obj: The Face's vertex index should be a integer")
+                                    .expect("Invalid Wavefront Obj: The Face's vertex index must be a integer")
                                     .parse::<isize>()
-                                    .expect("Invalid Wavefront Obj: The Face's vertex index should be a integer")
+                                    .expect("Invalid Wavefront Obj: The Face's vertex index must be a integer")
                             }
                         ).collect::<Vec<isize>>()
                     );

@@ -31,7 +31,7 @@ const fn char_to_hex(val: u8) -> u8 {
 impl Color {
     /// Receive a hexadecimal color value and return a Color
     /// The value must be follow one of this formats: #HHH or #HHHHHH
-    /// If it isn't possible to convert, return black
+    /// If it is a invalid value, return black
     pub const fn hex(value: &[u8]) -> Color {
         match value {
             &[b'#', r, g, b] => {
