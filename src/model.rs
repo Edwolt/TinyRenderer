@@ -13,17 +13,6 @@ pub struct Vertex {
     // w: f64,
 }
 
-impl Vertex {
-    fn to_point(&self, width: i32, height: i32) -> Point {
-        let x = (self.x + 1f64) * (width as f64) / 2f64;
-        let y = (self.y + 1f64) * (height as f64) / 2f64;
-        Point {
-            x: x as i32,
-            y: y as i32,
-        }
-    }
-}
-
 pub struct Model {
     pub vertices: Vec<Vertex>,
     pub faces: Vec<Vec<Vertex>>,
@@ -102,6 +91,15 @@ impl Model {
     }
 
     pub fn wireframe_render(&self, image: &mut Image, color: Color) {
+        fn vertex_to_point(&Vertex { x, y, z: _z }: &Vertex, width: i32, height: i32) -> Point {
+            let x = (x + 1f64) * (width as f64) / 2f64;
+            let y = (y + 1f64) * (height as f64) / 2f64;
+            Point {
+                x: x as i32,
+                y: y as i32,
+            }
+        }
+
         for face in &self.faces {
             let mut v = match face.last() {
                 Some(v) => v,
@@ -109,8 +107,8 @@ impl Model {
             };
             for u in face {
                 image.line(
-                    v.to_point(image.width, image.height),
-                    u.to_point(image.width, image.height),
+                    vertex_to_point(u, image.width, image.height),
+                    vertex_to_point(v, image.width, image.height),
                     color,
                 );
                 v = u;

@@ -13,7 +13,6 @@ fn main() {
     image.clear(Color::hex(b"#000"));
 
     // let model = Model::new("obj/african_head.obj").expect("Can't open model");
-
     // model.wireframe_render(&mut image, Color::hex(b"#FFF"));
 
     image.triangle(

@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::Write;
+use std::mem::swap;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Point {
@@ -14,25 +15,25 @@ pub struct Color {
     pub b: u8,
 }
 
-/// Convert a u8 ascii char to the hexadecimal equivalent
-/// If it isn't a valid u8 ascii char return 0
-const fn char_to_hex(val: u8) -> u8 {
-    if b'0' <= val && val <= b'9' {
-        val - b'0'
-    } else if b'a' <= val && val <= b'f' {
-        val - b'a' + 10
-    } else if b'A' <= val && val <= b'F' {
-        val - b'A' + 10
-    } else {
-        0
-    }
-}
-
 impl Color {
     /// Receive a hexadecimal color value and return a Color
     /// The value must be follow one of this formats: #HHH or #HHHHHH
     /// If it is a invalid value, return black
     pub const fn hex(value: &[u8]) -> Color {
+        /// Convert a u8 ascii char to the hexadecimal equivalent
+        /// If it isn't a valid u8 ascii char return 0
+        const fn char_to_hex(val: u8) -> u8 {
+            if b'0' <= val && val <= b'9' {
+                val - b'0'
+            } else if b'a' <= val && val <= b'f' {
+                val - b'a' + 10
+            } else if b'A' <= val && val <= b'F' {
+                val - b'A' + 10
+            } else {
+                0
+            }
+        }
+
         match value {
             &[b'#', r, g, b] => {
                 let r = char_to_hex(r);
@@ -271,72 +272,57 @@ impl Image {
         }
     }
 
-    pub fn triangle(&mut self, p0: Point, p1: Point, p2: Point, color: Color) {
+    pub fn triangle(&mut self, mut p0: Point, mut p1: Point, mut p2: Point, color: Color) {
+        // Order by x coordinate
+        if p0.x > p1.x {
+            swap(&mut p0, &mut p1);
+        }
+        if p0.x > p2.x {
+            swap(&mut p0, &mut p2);
+        }
+        if p1.x > p2.x {
+            swap(&mut p1, &mut p2);
+        }
+
         let Point { x: x0, y: y0 } = p0;
         let Point { x: x1, y: y1 } = p1;
+        let Point { x: x2, y: y2 } = p2;
 
-        let dx = x1 - x0;
-        let dy = y1 - y0;
+        // f0 is the function of the line from p0 to p2
+        let a0 = {
+            let dx = x2 - x0;
+            let dy = y2 - y0;
+            (dy as f64) / (dx as f64)
+        };
+        let b0 = (y0 as f64) - a0 * (x0 as f64);
+        let f0 = |x: i32| (a0 * (x as f64) + b0) as i32;
 
-        let flip = dy.abs() > dx.abs();
+        // f1 is the function of the line from p0 to p1
+        let a1 = {
+            let dx = x1 - x0;
+            let dy = y1 - y0;
+            (dy as f64) / (dx as f64)
+        };
+        let b1 = (y0 as f64) - a1 * (x0 as f64);
+        let f1 = |x: i32| (a1 * (x as f64) + b1) as i32;
 
-        if dx == 0 && dy == 0 {
-            self.line(p2, p0, color);
-        } else if !flip {
-            let a3 = 2 * dy.abs();
+        // f2 is the function of  the line from p1 to p2
+        let a2 = {
+            let dx = x2 - x1;
+            let dy = y2 - y1;
+            (dy as f64) / (dx as f64)
+        };
+        let b2 = (y1 as f64) - a2 * (x1 as f64);
+        let f2 = |x: i32| (a2 * (x as f64) + b2) as i32;
 
-            let mut y_ = y0;
-            let mut e3 = 0;
+        // Draw left side of triangle
+        for x in x0..=x1 {
+            self.line(Point { x, y: f0(x) }, Point { x, y: f1(x) }, color)
+        }
 
-            for x_ in x0..=x1 {
-                self.line(p2, Point { x: x_, y: y_ }, color);
-
-                e3 += a3;
-                if e3 > dx {
-                    e3 -= 2 * dx; // 2*|Δx|
-                    y_ = if dy > 0 { y_ + 1 } else { y_ - 1 };
-                }
-            }
-
-            let mut y_ = y1;
-            let mut e3 = 0;
-
-            for x_ in x1..=x0 {
-                self.line(p2, Point { x: x_, y: y_ }, color);
-
-                e3 += a3;
-
-                // e3 > |Δx|
-                if e3 > -dx {
-                    e3 += 2 * dx; // 2*|Δx|
-                    y_ = if dy > 0 { y_ - 1 } else { y_ + 1 };
-                }
-            }
-        } else {
-            let a3 = 2 * dx.abs();
-
-            let mut x_ = x0;
-            let mut e3 = 0;
-            for y_ in y0..=y1 {
-                self.line(p2, Point { x: x_, y: y_ }, color);
-                e3 += a3;
-                if e3 > dy {
-                    e3 -= 2 * dy;
-                    x_ = if dx > 0 { x_ + 1 } else { x_ - 1 };
-                }
-            }
-
-            let mut x_ = x1;
-            let mut e3 = 0;
-            for y_ in y1..=y0 {
-                self.line(p2, Point { x: x_, y: y_ }, color);
-
-                e3 += a3;
-                if e3 > -dy {
-                    e3 += 2 * dy;
-                    x_ = if dx > 0 { x_ - 1 } else { x_ + 1 };
-                }
-            }
+        // Draw right side of triangle
+        for x in x1..=x2 {
+            self.line(Point { x, y: f0(x) }, Point { x, y: f2(x) }, color)
         }
     }
 
