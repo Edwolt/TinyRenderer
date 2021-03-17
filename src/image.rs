@@ -29,32 +29,35 @@ const fn char_to_hex(val: u8) -> u8 {
 }
 
 impl Color {
+    /// Receive a hexadecimal color value and return a Color
+    /// The value must be follow one of this formats: #HHH or #HHHHHH
+    /// If it isn't possible to convert, return black
     pub const fn hex(value: &[u8]) -> Color {
-        if value[0] != b'#' {
-            return Color { r: 0, g: 0, b: 0 };
-        } else if value.len() == 4 {
-            let r = char_to_hex(value[1]);
-            let g = char_to_hex(value[2]);
-            let b = char_to_hex(value[3]);
-            return Color {
-                r: (r << 4) + r,
-                g: (g << 4) + g,
-                b: (b << 4) + b,
-            };
-        } else if value.len() == 7 {
-            let r1 = char_to_hex(value[1]);
-            let r0 = char_to_hex(value[2]);
-            let g1 = char_to_hex(value[3]);
-            let g0 = char_to_hex(value[4]);
-            let b1 = char_to_hex(value[5]);
-            let b0 = char_to_hex(value[6]);
-            return Color {
-                r: (r1 << 4) + r0,
-                g: (g1 << 4) + g0,
-                b: (b1 << 4) + b0,
-            };
-        } else {
-            return Color { r: 0, g: 0, b: 0 };
+        match value {
+            &[b'#', r, g, b] => {
+                let r = char_to_hex(r);
+                let g = char_to_hex(g);
+                let b = char_to_hex(b);
+                Color {
+                    r: (r << 4) + r,
+                    g: (g << 4) + g,
+                    b: (b << 4) + b,
+                }
+            }
+            &[b'#', r1, r0, g1, g0, b1, b0] => {
+                let r1 = char_to_hex(r1);
+                let r0 = char_to_hex(r0);
+                let g1 = char_to_hex(g1);
+                let g0 = char_to_hex(g0);
+                let b1 = char_to_hex(b1);
+                let b0 = char_to_hex(b0);
+                Color {
+                    r: (r1 << 4) + r0,
+                    g: (g1 << 4) + g0,
+                    b: (b1 << 4) + b0,
+                }
+            }
+            _ => Color { r: 0, g: 0, b: 0 },
         }
     }
 }

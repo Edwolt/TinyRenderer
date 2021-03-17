@@ -6,8 +6,8 @@ mod model;
 use model::Model;
 
 fn main() {
-    let width = 1000;
-    let height = 1000;
+    let width = 500;
+    let height = 500;
     let mut image = Image::new(width, height);
     image.clear(Color::hex(b"#000"));
 
