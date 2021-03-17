@@ -62,6 +62,22 @@ impl Color {
     }
 }
 
+#[test]
+fn test_color() {
+    let c = Color::hex(b"#097d71");
+    if c.r != 9 || c.g != 125 || c.b != 113 {
+        panic!("{} = {:?}", "#097d71", c);
+    }
+    let c = Color::hex(b"#F97D71");
+    if c.r != 249 || c.g != 125 || c.b != 113 {
+        panic!("{} = {:?}", "#F97d71", c);
+    }
+    let c = Color::hex(b"#F5a");
+    if c.r != 255 || c.g != 85 || c.b != 170 {
+        panic!("{} = {:?}", "#F5a", c);
+    }
+}
+
 pub struct Image {
     pub width: i32,
     pub height: i32,
