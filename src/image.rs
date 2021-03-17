@@ -14,47 +14,48 @@ pub struct Color {
     pub b: u8,
 }
 
-const fn char_to_hex(val: u8) -> Result<u8, ()> {
+/// Convert a u8 ascii char to the hexadecimal equivalent
+/// If it isn't a valid u8 ascii char return 0
+const fn char_to_hex(val: u8) -> u8 {
     if b'0' <= val && val <= b'9' {
-        Ok(val - b'0')
+        val - b'0'
     } else if b'a' <= val && val <= b'f' {
-        Ok(val - b'a' + 10)
+        val - b'a' + 10
     } else if b'A' <= val && val <= b'F' {
-        Ok(val - b'A' + 10)
+        val - b'A' + 10
     } else {
-        Err(())
+        0
     }
 }
 
 impl Color {
-    pub fn hex(value: &str) -> Color {
-        let error_msg = "Color hexadecimal value must follow this format #HHH or #HHHHHH";
-
-        let mut chars = value.bytes();
-        assert!(chars.next().expect(error_msg) == b'#', error_msg);
-
-        let mut r: u8;
-        let mut g: u8;
-        let mut b: u8;
-        r = char_to_hex(chars.next().expect(error_msg)).expect(error_msg);
-        g = char_to_hex(chars.next().expect(error_msg)).expect(error_msg);
-        b = char_to_hex(chars.next().expect(error_msg)).expect(error_msg);
-        if let Some(tmp) = chars.next() {
-            r = (r << 4) + g;
-            g = (b << 4) + tmp;
-            b = char_to_hex(chars.next().expect(error_msg)).expect(error_msg);
-            b <<= 4;
-            b += char_to_hex(chars.next().expect(error_msg)).expect(error_msg);
-            if !chars.next().is_none() {
-                panic!(error_msg);
-            }
+    pub const fn hex(value: &[u8]) -> Color {
+        if value[0] != b'#' {
+            return Color { r: 0, g: 0, b: 0 };
+        } else if value.len() == 4 {
+            let r = char_to_hex(value[1]);
+            let g = char_to_hex(value[2]);
+            let b = char_to_hex(value[3]);
+            return Color {
+                r: (r << 4) + r,
+                g: (g << 4) + g,
+                b: (b << 4) + b,
+            };
+        } else if value.len() == 7 {
+            let r1 = char_to_hex(value[1]);
+            let r0 = char_to_hex(value[2]);
+            let g1 = char_to_hex(value[3]);
+            let g0 = char_to_hex(value[4]);
+            let b1 = char_to_hex(value[5]);
+            let b0 = char_to_hex(value[6]);
+            return Color {
+                r: (r1 << 4) + r0,
+                g: (g1 << 4) + g0,
+                b: (b1 << 4) + b0,
+            };
         } else {
-            r = (r << 4) + r;
-            g = (g << 4) + g;
-            b = (b << 4) + b;
+            return Color { r: 0, g: 0, b: 0 };
         }
-
-        Color { r, g, b }
     }
 }
 
