@@ -272,9 +272,72 @@ impl Image {
     }
 
     pub fn triangle(&mut self, p0: Point, p1: Point, p2: Point, color: Color) {
-        self.line(p0, p1, color);
-        self.line(p1, p2, color);
-        self.line(p2, p0, color);
+        let Point { x: x0, y: y0 } = p0;
+        let Point { x: x1, y: y1 } = p1;
+
+        let dx = x1 - x0;
+        let dy = y1 - y0;
+
+        let flip = dy.abs() > dx.abs();
+
+        if dx == 0 && dy == 0 {
+            self.line(p2, p0, color);
+        } else if !flip {
+            let a3 = 2 * dy.abs();
+
+            let mut y_ = y0;
+            let mut e3 = 0;
+
+            for x_ in x0..=x1 {
+                self.line(p2, Point { x: x_, y: y_ }, color);
+
+                e3 += a3;
+                if e3 > dx {
+                    e3 -= 2 * dx; // 2*|Δx|
+                    y_ = if dy > 0 { y_ + 1 } else { y_ - 1 };
+                }
+            }
+
+            let mut y_ = y1;
+            let mut e3 = 0;
+
+            for x_ in x1..=x0 {
+                self.line(p2, Point { x: x_, y: y_ }, color);
+
+                e3 += a3;
+
+                // e3 > |Δx|
+                if e3 > -dx {
+                    e3 += 2 * dx; // 2*|Δx|
+                    y_ = if dy > 0 { y_ - 1 } else { y_ + 1 };
+                }
+            }
+        } else {
+            let a3 = 2 * dx.abs();
+
+            let mut x_ = x0;
+            let mut e3 = 0;
+            for y_ in y0..=y1 {
+                self.line(p2, Point { x: x_, y: y_ }, color);
+                e3 += a3;
+                if e3 > dy {
+                    e3 -= 2 * dy;
+                    x_ = if dx > 0 { x_ + 1 } else { x_ - 1 };
+                }
+            }
+
+            let mut x_ = x1;
+            let mut e3 = 0;
+            for y_ in y1..=y0 {
+                self.line(p2, Point { x: x_, y: y_ }, color);
+
+                e3 += a3;
+                if e3 > -dy {
+                    e3 += 2 * dy;
+                    x_ = if dx > 0 { x_ - 1 } else { x_ + 1 };
+                }
+            }
+        }
     }
 
     /// Save the image as a bitmap
