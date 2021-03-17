@@ -271,6 +271,12 @@ impl Image {
         }
     }
 
+    pub fn triangle(&mut self, p0: Point, p1: Point, p2: Point, color: Color) {
+        self.line(p0, p1, color);
+        self.line(p1, p2, color);
+        self.line(p2, p0, color);
+    }
+
     /// Save the image as a bitmap
     pub fn save(&self, path: &str) -> std::io::Result<()> {
         let mut file = File::create(path)?;
