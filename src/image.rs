@@ -284,45 +284,39 @@ impl Image {
             swap(&mut p1, &mut p2);
         }
 
-        let Point { x: x0, y: y0 } = p0;
-        let Point { x: x1, y: y1 } = p1;
-        let Point { x: x2, y: y2 } = p2;
+        fn coefficients(
+            Point { x: x0, y: y0 }: Point,
+            Point { x: x1, y: y1 }: Point,
+        ) -> (f64, f64) {
+            let a = {
+                let dx = x1 - x0;
+                let dy = y1 - y0;
+                (dy as f64) / (dx as f64)
+            };
+            let b = (y0 as f64) - a * (x0 as f64);
+            (a, b)
+        }
 
-        // f0 is the function of the line from p0 to p2
-        let a0 = {
-            let dx = x2 - x0;
-            let dy = y2 - y0;
-            (dy as f64) / (dx as f64)
-        };
-        let b0 = (y0 as f64) - a0 * (x0 as f64);
-        let f0 = |x: i32| (a0 * (x as f64) + b0) as i32;
+        fn function(x: i32, c: (f64, f64)) -> Point {
+            let (a, b) = c;
+            Point {
+                x,
+                y: (a * (x as f64) + b) as i32,
+            }
+        }
 
-        // f1 is the function of the line from p0 to p1
-        let a1 = {
-            let dx = x1 - x0;
-            let dy = y1 - y0;
-            (dy as f64) / (dx as f64)
-        };
-        let b1 = (y0 as f64) - a1 * (x0 as f64);
-        let f1 = |x: i32| (a1 * (x as f64) + b1) as i32;
-
-        // f2 is the function of  the line from p1 to p2
-        let a2 = {
-            let dx = x2 - x1;
-            let dy = y2 - y1;
-            (dy as f64) / (dx as f64)
-        };
-        let b2 = (y1 as f64) - a2 * (x1 as f64);
-        let f2 = |x: i32| (a2 * (x as f64) + b2) as i32;
+        let line0 = coefficients(p0, p2);
+        let line1 = coefficients(p0, p1);
+        let line2 = coefficients(p1, p2);
 
         // Draw left side of triangle
-        for x in x0..=x1 {
-            self.line(Point { x, y: f0(x) }, Point { x, y: f1(x) }, color)
+        for x in p0.x..=p1.x {
+            self.line(function(x, line0), function(x, line1), color);
         }
 
         // Draw right side of triangle
-        for x in x1..=x2 {
-            self.line(Point { x, y: f0(x) }, Point { x, y: f2(x) }, color)
+        for x in p1.x..=p2.x {
+            self.line(function(x, line0), function(x, line2), color);
         }
     }
 
