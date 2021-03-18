@@ -11,7 +11,7 @@ pub struct Point {
 
 impl ops::Add for Point {
     type Output = Point;
-    fn add(self, other: Self) -> Point {
+    fn add(self, other: Self) -> Self {
         Point {
             x: self.x + other.x,
             y: self.y + other.y,
@@ -21,10 +21,21 @@ impl ops::Add for Point {
 
 impl ops::Sub for Point {
     type Output = Point;
-    fn sub(self, other: Self) -> Point {
+    fn sub(self, other: Self) -> Self {
         Point {
             x: self.x - other.x,
             y: self.y - other.y,
+        }
+    }
+}
+
+/// Product with a scalar
+impl ops::Mul<i32> for Point {
+    type Output = Point;
+    fn mul(self, other: i32) -> Self {
+        Point {
+            x: self.x * other,
+            y: self.y * other,
         }
     }
 }
@@ -39,7 +50,7 @@ impl ops::Mul for Point {
 
 impl Point {
     /// Cross product
-    const fn cross(&self, other: Point) -> i32 {
+    const fn cross(self, other: Point) -> i32 {
         self.x * other.y - self.y * other.x
     }
 }
@@ -95,6 +106,17 @@ impl Color {
                 }
             }
             _ => Color { r: 0, g: 0, b: 0 },
+        }
+    }
+}
+
+impl ops::Mul<f64> for Color {
+    type Output = Color;
+    fn mul(self, other: f64) -> Color {
+        Color {
+            r: ((self.r as f64) * other) as u8,
+            g: ((self.g as f64) * other) as u8,
+            b: ((self.b as f64) * other) as u8,
         }
     }
 }
