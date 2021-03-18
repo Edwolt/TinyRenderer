@@ -28,6 +28,8 @@ impl ops::Sub for Point {
         }
     }
 }
+
+/// Scalar product
 impl ops::Mul for Point {
     type Output = i32;
     fn mul(self, other: Self) -> i32 {
@@ -36,6 +38,7 @@ impl ops::Mul for Point {
 }
 
 impl Point {
+    /// Cross product
     const fn cross(&self, other: Point) -> i32 {
         self.x * other.y - self.y * other.x
     }
