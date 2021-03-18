@@ -1,10 +1,11 @@
+mod modules;
+use modules::{Color, Vertex};
+
 mod image;
-use image::Color;
 use image::Image;
 
 mod model;
 use model::Model;
-use model::Vertex;
 
 fn main() {
     let width = 500;
