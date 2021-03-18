@@ -1,3 +1,4 @@
+use std::cmp::{max, min};
 use std::fs::File;
 use std::io::Write;
 use std::ops;
@@ -92,22 +93,6 @@ impl Color {
             }
             _ => Color { r: 0, g: 0, b: 0 },
         }
-    }
-}
-
-#[test]
-fn test_color() {
-    let c = Color::hex(b"#097d71");
-    if c.r != 9 || c.g != 125 || c.b != 113 {
-        panic!("{} = {:?}", "#097d71", c);
-    }
-    let c = Color::hex(b"#F97D71");
-    if c.r != 249 || c.g != 125 || c.b != 113 {
-        panic!("{} = {:?}", "#F97d71", c);
-    }
-    let c = Color::hex(b"#F5a");
-    if c.r != 255 || c.g != 85 || c.b != 170 {
-        panic!("{} = {:?}", "#F5a", c);
     }
 }
 
@@ -305,22 +290,9 @@ impl Image {
         }
     }
 
+    // Draw a triangle filled with color
     pub fn triangle(&mut self, v0: Point, v1: Point, v2: Point, color: Color) {
-        const fn max(a: i32, b: i32) -> i32 {
-            if a > b {
-                a
-            } else {
-                b
-            }
-        }
-        const fn min(a: i32, b: i32) -> i32 {
-            if a < b {
-                a
-            } else {
-                b
-            }
-        }
-
+        /// Test if the point p is inside triangle v0 v1 v2
         fn inside(p: Point, v0: Point, v1: Point, v2: Point) -> bool {
             let cross1 = (v0 - p).cross(v1 - v0);
             let cross2 = (v1 - p).cross(v2 - v1);
