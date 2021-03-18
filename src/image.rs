@@ -1,11 +1,43 @@
 use std::fs::File;
 use std::io::Write;
-use std::mem::swap;
+use std::ops;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Point {
     pub x: i32,
     pub y: i32,
+}
+
+impl ops::Add for Point {
+    type Output = Point;
+    fn add(self, other: Self) -> Point {
+        Point {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+impl ops::Sub for Point {
+    type Output = Point;
+    fn sub(self, other: Self) -> Point {
+        Point {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
+    }
+}
+impl ops::Mul for Point {
+    type Output = i32;
+    fn mul(self, other: Self) -> i32 {
+        self.x * other.x + self.y * other.y
+    }
+}
+
+impl Point {
+    const fn cross(&self, other: Point) -> i32 {
+        self.x * other.y - self.y * other.x
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -91,7 +123,7 @@ impl Image {
         Image {
             width,
             height,
-            pixels: vec![Color { r: 0, g: 0, b: 0 }; size],
+            pixels: vec![Color::hex(b"#000"); size],
         }
     }
 
@@ -103,6 +135,7 @@ impl Image {
     }
 
     /// Set all image's pixels to color
+    #[allow(dead_code)]
     pub fn clear(&mut self, color: Color) {
         for i in 0..self.pixels.len() {
             self.pixels[i] = color;
@@ -272,51 +305,44 @@ impl Image {
         }
     }
 
-    pub fn triangle(&mut self, mut p0: Point, mut p1: Point, mut p2: Point, color: Color) {
-        // Order by x coordinate
-        if p0.x > p1.x {
-            swap(&mut p0, &mut p1);
+    pub fn triangle(&mut self, v0: Point, v1: Point, v2: Point, color: Color) {
+        const fn max(a: i32, b: i32) -> i32 {
+            if a > b {
+                a
+            } else {
+                b
+            }
         }
-        if p0.x > p2.x {
-            swap(&mut p0, &mut p2);
-        }
-        if p1.x > p2.x {
-            swap(&mut p1, &mut p2);
-        }
-
-        fn coefficients(
-            Point { x: x0, y: y0 }: Point,
-            Point { x: x1, y: y1 }: Point,
-        ) -> (f64, f64) {
-            let a = {
-                let dx = x1 - x0;
-                let dy = y1 - y0;
-                (dy as f64) / (dx as f64)
-            };
-            let b = (y0 as f64) - a * (x0 as f64);
-            (a, b)
-        }
-
-        fn function(x: i32, c: (f64, f64)) -> Point {
-            let (a, b) = c;
-            Point {
-                x,
-                y: (a * (x as f64) + b) as i32,
+        const fn min(a: i32, b: i32) -> i32 {
+            if a < b {
+                a
+            } else {
+                b
             }
         }
 
-        let line0 = coefficients(p0, p2);
-        let line1 = coefficients(p0, p1);
-        let line2 = coefficients(p1, p2);
+        fn inside(p: Point, v0: Point, v1: Point, v2: Point) -> bool {
+            let cross1 = (v0 - p).cross(v1 - v0);
+            let cross2 = (v1 - p).cross(v2 - v1);
+            let cross3 = (v2 - p).cross(v0 - v2);
 
-        // Draw left side of triangle
-        for x in p0.x..=p1.x {
-            self.line(function(x, line0), function(x, line1), color);
+            let neg = cross1 < 0 && cross2 < 0 && cross3 < 0;
+            let pos = cross1 > 0 && cross2 > 0 && cross3 > 0;
+            neg || pos
         }
 
-        // Draw right side of triangle
-        for x in p1.x..=p2.x {
-            self.line(function(x, line0), function(x, line2), color);
+        let max_x = max(max(v0.x, v1.x), v2.x);
+        let max_y = max(max(v0.y, v1.y), v2.y);
+        let min_x = min(min(v0.x, v1.x), v2.x);
+        let min_y = min(min(v0.y, v1.y), v2.y);
+
+        for x in min_x..max_x {
+            for y in min_y..max_y {
+                let p = Point { x, y };
+                if inside(p, v0, v1, v2) {
+                    self.set(p, color);
+                }
+            }
         }
     }
 
