@@ -81,7 +81,7 @@ impl Model {
         Ok(model)
     }
 
-    pub fn wireframe_render(&self, image: &mut Image, color: Color) {
+    pub fn wireframe(&self, image: &mut Image, color: Color) {
         for face in &self.faces {
             let mut v = match face.last() {
                 Some(v) => v,
@@ -107,7 +107,7 @@ impl Model {
             let intensity = normal * light;
 
             if intensity > 0f64 {
-                // if intensity < 0 it's
+                // if intensity < 0 it's behind the scene
                 image.triangle(
                     u.to_point(image.width, image.height),
                     v.to_point(image.width, image.height),

@@ -15,7 +15,7 @@ fn main() {
     let mut image = Image::new(width, height);
 
     let model = Model::new("obj/african_head.obj").expect("Can't open model");
-    model.wireframe_render(&mut wire, Color::hex(b"#FFF"));
+    model.wireframe(&mut wire, Color::hex(b"#FFF"));
     model.render(
         &mut image,
         Vertex {

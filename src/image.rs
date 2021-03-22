@@ -1,4 +1,3 @@
-use std::cmp::{max, min};
 use std::fs::File;
 use std::io::Write;
 
@@ -211,10 +210,10 @@ impl Image {
             neg || pos
         }
 
-        let max_x = max(max(v0.x, v1.x), v2.x);
-        let max_y = max(max(v0.y, v1.y), v2.y);
-        let min_x = min(min(v0.x, v1.x), v2.x);
-        let min_y = min(min(v0.y, v1.y), v2.y);
+        let max_x = v0.x.max(v1.x).max(v2.x);
+        let max_y = v0.y.max(v1.y).max(v2.y);
+        let min_x = v0.x.min(v1.x).min(v2.x);
+        let min_y = v0.y.min(v1.y).min(v2.y);
 
         for x in min_x..max_x {
             for y in min_y..max_y {
