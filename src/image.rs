@@ -1,12 +1,23 @@
-use std::fs::File;
 use std::io::Write;
+use std::{borrow::Borrow, fs::File};
 
-use crate::modules::{Color, Point};
+use crate::modules::{Color, Point, Vertex};
 
 pub struct Image {
     pub width: i32,
     pub height: i32,
     pub pixels: Vec<Color>,
+}
+
+/// Test if the point p is inside triangle v0 v1 v2
+fn inside_triangle(p: Point, v0: Point, v1: Point, v2: Point) -> bool {
+    let cross1 = (v0 - p).cross(v1 - v0);
+    let cross2 = (v1 - p).cross(v2 - v1);
+    let cross3 = (v2 - p).cross(v0 - v2);
+
+    let neg = cross1 < 0 && cross2 < 0 && cross3 < 0;
+    let pos = cross1 > 0 && cross2 > 0 && cross3 > 0;
+    neg || pos
 }
 
 impl Image {
@@ -31,6 +42,78 @@ impl Image {
     pub fn clear(&mut self, color: Color) {
         for i in 0..self.pixels.len() {
             self.pixels[i] = color;
+        }
+    }
+
+    /// Draw the triangle defined by the points v0, v1, v2
+    /// filled with color
+    pub fn triangle(&mut self, v0: Point, v1: Point, v2: Point, color: Color) {
+        let max_x = v0.x.max(v1.x).max(v2.x);
+        let max_y = v0.y.max(v1.y).max(v2.y);
+        let min_x = v0.x.min(v1.x).min(v2.x);
+        let min_y = v0.y.min(v1.y).min(v2.y);
+
+        for x in min_x..=max_x {
+            for y in min_y..=max_y {
+                let p = Point { x, y };
+                if inside_triangle(p, v0, v1, v2) {
+                    self.set(p, color);
+                }
+            }
+        }
+    }
+
+    /// Draw a triangle defined by the vertexs v0, v1, v2
+    /// filled with color
+    /// using a zbuffer to prevent drawing a hidden triangle over other\
+    /// zbuffer length must be image.width * image.height
+    /// and be filled with f64::NEG_INFINITY
+    pub fn triangle_zbuffer(
+        &mut self,
+        zbuffer: &mut Vec<f64>,
+        v0: Vertex,
+        v1: Vertex,
+        v2: Vertex,
+        color: Color,
+    ) {
+        let w = self.width as usize;
+        let index = |i: usize, j: usize| i * (w as usize) + j;
+
+        // Convert Vertex to points
+        let p0 = v0.to_point(self.width, self.height);
+        let p1 = v1.to_point(self.width, self.height);
+        let p2 = v2.to_point(self.width, self.height);
+
+        let max_x = p0.x.max(p1.x).max(p2.x) + 1;
+        let max_y = p0.y.max(p1.y).max(p2.y) + 1;
+        let min_x = p0.x.min(p1.x).min(p2.x) - 1;
+        let min_y = p0.y.min(p1.y).min(p2.y) - 1;
+
+        for x in min_x..=max_x {
+            for y in min_y..=max_y {
+                let p = Point { x, y };
+                if inside_triangle(p, p0, p1, p2) {
+                    let z = {
+                        let normal = (v0 - v1).cross(v0 - v2);
+                        let Vertex { x: a, y: b, z: c } = normal;
+                        if c == 0f64 {
+                            v0.z
+                        } else {
+                            // let d = -(a * v0.x + b * v0.y + c * v0.z);
+                            // let x = (p.x as f64) * 2f64 / (self.width as f64) - 1f64;
+                            // let y = (p.y as f64) * 2f64 / (self.width as f64) - 1f64;
+                            // (a * x + b * y + d) / (-c)
+                            let x = (p.x as f64) * 2f64 / (self.width as f64) - 1f64;
+                            let y = (p.y as f64) * 2f64 / (self.width as f64) - 1f64;
+                            (a * (v0.x - x) + b * (v0.y - y) + c * v0.z) / c
+                        }
+                    };
+                    if zbuffer[index(y as usize, x as usize)] < z {
+                        zbuffer[index(y as usize, x as usize)] = z;
+                        self.set(p, color);
+                    }
+                }
+            }
         }
     }
 
@@ -192,34 +275,6 @@ impl Image {
                 if e3 > -dy {
                     e3 += 2 * dy;
                     x_ = if dx > 0 { x_ - 1 } else { x_ + 1 };
-                }
-            }
-        }
-    }
-
-    // Draw a triangle filled with color
-    pub fn triangle(&mut self, v0: Point, v1: Point, v2: Point, color: Color) {
-        /// Test if the point p is inside triangle v0 v1 v2
-        fn inside(p: Point, v0: Point, v1: Point, v2: Point) -> bool {
-            let cross1 = (v0 - p).cross(v1 - v0);
-            let cross2 = (v1 - p).cross(v2 - v1);
-            let cross3 = (v2 - p).cross(v0 - v2);
-
-            let neg = cross1 < 0 && cross2 < 0 && cross3 < 0;
-            let pos = cross1 > 0 && cross2 > 0 && cross3 > 0;
-            neg || pos
-        }
-
-        let max_x = v0.x.max(v1.x).max(v2.x);
-        let max_y = v0.y.max(v1.y).max(v2.y);
-        let min_x = v0.x.min(v1.x).min(v2.x);
-        let min_y = v0.y.min(v1.y).min(v2.y);
-
-        for x in min_x..max_x {
-            for y in min_y..max_y {
-                let p = Point { x, y };
-                if inside(p, v0, v1, v2) {
-                    self.set(p, color);
                 }
             }
         }

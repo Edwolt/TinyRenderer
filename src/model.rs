@@ -99,21 +99,18 @@ impl Model {
     }
 
     pub fn render(&self, image: &mut Image, light: Vertex, color: Color) {
+        let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
+
         for face in &self.faces {
             let u = face[0];
             let v = face[1];
             let w = face[2];
-            let normal = (v - u).cross(w - u).normalize();
+            let normal = (w - u).cross(v - u).normalize();
             let intensity = normal * light;
 
             if intensity > 0f64 {
                 // if intensity < 0 it's behind the scene
-                image.triangle(
-                    u.to_point(image.width, image.height),
-                    v.to_point(image.width, image.height),
-                    w.to_point(image.width, image.height),
-                    color * intensity,
-                )
+                image.triangle_zbuffer(&mut zbuffer, u, v, w, color * intensity);
             }
         }
     }
