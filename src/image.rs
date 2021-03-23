@@ -1,5 +1,5 @@
+use std::fs::File;
 use std::io::Write;
-use std::{borrow::Borrow, fs::File};
 
 use crate::modules::{Color, Point, Vertex};
 
@@ -47,6 +47,7 @@ impl Image {
 
     /// Draw the triangle defined by the points v0, v1, v2
     /// filled with color
+    #[allow(dead_code)]
     pub fn triangle(&mut self, v0: Point, v1: Point, v2: Point, color: Color) {
         let max_x = v0.x.max(v1.x).max(v2.x);
         let max_y = v0.y.max(v1.y).max(v2.y);
@@ -96,15 +97,15 @@ impl Image {
                     let z = {
                         let normal = (v0 - v1).cross(v0 - v2);
                         let Vertex { x: a, y: b, z: c } = normal;
-                        if c == 0f64 {
+                        if c == 0.0 {
                             v0.z
                         } else {
                             // let d = -(a * v0.x + b * v0.y + c * v0.z);
-                            // let x = (p.x as f64) * 2f64 / (self.width as f64) - 1f64;
-                            // let y = (p.y as f64) * 2f64 / (self.width as f64) - 1f64;
+                            // let x = (p.x as f64) * 2.0 / (self.width as f64) - 1.0;
+                            // let y = (p.y as f64) * 2.0 / (self.width as f64) - 1.0;
                             // (a * x + b * y + d) / (-c)
-                            let x = (p.x as f64) * 2f64 / (self.width as f64) - 1f64;
-                            let y = (p.y as f64) * 2f64 / (self.width as f64) - 1f64;
+                            let x = (p.x as f64) * 2.0 / (self.width as f64) - 1.0;
+                            let y = (p.y as f64) * 2.0 / (self.width as f64) - 1.0;
                             (a * (v0.x - x) + b * (v0.y - y) + c * v0.z) / c
                         }
                     };

@@ -108,7 +108,7 @@ impl Model {
             let normal = (w - u).cross(v - u).normalize();
             let intensity = normal * light;
 
-            if intensity > 0f64 {
+            if intensity > 0.0 {
                 // if intensity < 0 it's behind the scene
                 image.triangle_zbuffer(&mut zbuffer, u, v, w, color * intensity);
             }

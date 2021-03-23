@@ -17,14 +17,14 @@ impl Vertex {
     }
 
     pub fn normalize(self) -> Vertex {
-        if self.x == 0f64 && self.y == 0f64 && self.z == 0f64 {
+        if self.x == 0.0 && self.y == 0.0 && self.z == 0.0 {
             return Vertex {
-                x: 0f64,
-                y: 0f64,
-                z: 0f64,
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
             };
         }
-        self * (1f64 / self.norm())
+        self * (1.0 / self.norm())
     }
 
     pub fn cross(self, other: Vertex) -> Vertex {
@@ -48,8 +48,8 @@ impl Vertex {
     }
 
     pub fn to_point(self, width: i32, height: i32) -> Point {
-        let x = (self.x + 1f64) * ((width - 1) as f64) / 2f64;
-        let y = (self.y + 1f64) * ((height - 1) as f64) / 2f64;
+        let x = (self.x + 1.0) * ((width - 1) as f64) / 2.0;
+        let y = (self.y + 1.0) * ((height - 1) as f64) / 2.0;
         Point {
             x: x as i32,
             y: y as i32,

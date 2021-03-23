@@ -19,9 +19,9 @@ fn main() {
     model.render(
         &mut image,
         Vertex {
-            x: 0f64,
-            y: 0f64,
-            z: -1f64,
+            x: 0.0,
+            y: 0.0,
+            z: -1.0,
         },
         Color::hex(b"#FFF"),
     );
