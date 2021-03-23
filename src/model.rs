@@ -10,77 +10,6 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn new(path: &str) -> std::io::Result<Model> {
-        let mut file = File::open(path)?;
-
-        let mut lines: String = String::new();
-        file.read_to_string(&mut lines)?;
-        let lines = lines.split('\n');
-
-        let mut model = Model {
-            vertices: Vec::new(),
-            faces: Vec::new(),
-        };
-
-        let mut faces_index: Vec<Vec<isize>> = Vec::new();
-
-        for line in lines {
-            let mut data = line.split(" ");
-            match data.next() {
-                Some("v") => model.vertices.push(Vertex {
-                    x: data
-                        .next()
-                        .expect("Invalid Wavefront Obj: Vertex must have x coordinate")
-                        .parse::<f64>()
-                        .expect("Invalid Wavefront Obj: Vertex coordinate must be a float"),
-                    y: data
-                        .next()
-                        .expect("Invalid Wavefront Obj: Vertex must have y coordinate")
-                        .parse::<f64>()
-                        .expect("Invalid Wavefront Obj: Vertex coordinate must be a float"),
-                    z: data
-                        .next()
-                        .expect("Invalid Wavefront Obj: Vertex must have z coordinate")
-                        .parse::<f64>()
-                        .expect("Invalid Wavefront Obj: Vertex coordinate must be a float"),
-                }),
-                Some("f") => {
-                    faces_index.push(
-                        data.map(|index| {
-                                index
-                                    .split("/")
-                                    .next()
-                                    .expect("Invalid Wavefront Obj: The Face's vertex index must be a integer")
-                                    .parse::<isize>()
-                                    .expect("Invalid Wavefront Obj: The Face's vertex index must be a integer")
-                            }
-                        ).collect::<Vec<isize>>()
-                    );
-                }
-                _ => continue,
-            }
-        }
-
-        for face in faces_index {
-            model.faces.push(
-                face.iter()
-                    .map(|&index| {
-                        let index = if index > 0 {
-                            index as usize
-                        } else {
-                            let i = (model.vertices.len() as isize) - index;
-                            assert!(i > 0, "Invalid Wavefront Obj: Invalid Vertex index");
-                            i as usize
-                        };
-                        model.vertices[index - 1]
-                    })
-                    .collect::<Vec<Vertex>>(),
-            );
-        }
-
-        Ok(model)
-    }
-
     pub fn wireframe(&self, image: &mut Image, color: Color) {
         for face in &self.faces {
             let mut v = match face.last() {
@@ -111,7 +40,84 @@ impl Model {
             if intensity > 0.0 {
                 // if intensity < 0 it's behind the scene
                 image.triangle_zbuffer(&mut zbuffer, u, v, w, color * intensity);
+            } else {
+                image.triangle_zbuffer(&mut zbuffer, u, v, w, Color::hex(b"#000"));
             }
         }
+    }
+
+    pub fn new(path: &str) -> std::io::Result<Model> {
+        let mut file = File::open(path)?;
+
+        let mut lines: String = String::new();
+        file.read_to_string(&mut lines)?;
+        let lines = lines.split('\n');
+
+        let mut model = Model {
+            vertices: Vec::new(),
+            faces: Vec::new(),
+        };
+
+        let mut faces_index: Vec<Vec<isize>> = Vec::new();
+
+        for line in lines {
+            let mut data = line.split(" ");
+            match data.next() {
+                Some("v") => model.vertices.push(Vertex {
+                    x: data
+                        .next()
+                        .expect("Invalid Wavefront Obj: Vertex must have x coordinate")
+                        .trim()
+                        .parse::<f64>()
+                        .expect("Invalid Wavefront Obj: Vertex coordinate must be a float"),
+                    y: data
+                        .next()
+                        .expect("Invalid Wavefront Obj: Vertex must have y coordinate")
+                        .trim()
+                        .parse::<f64>()
+                        .expect("Invalid Wavefront Obj: Vertex coordinate must be a float"),
+                    z: data
+                        .next()
+                        .expect("Invalid Wavefront Obj: Vertex must have z coordinate")
+                        .trim()
+                        .parse::<f64>()
+                        .expect("Invalid Wavefront Obj: Vertex coordinate must be a float"),
+                }),
+                Some("f") => {
+                    faces_index.push(
+                        data.map(|index| {
+                                index
+                                    .split("/")
+                                    .next()
+                                    .expect("Invalid Wavefront Obj: The Face's vertex index must be a integer")
+                                    .trim()
+                                    .parse::<isize>()
+                                    .expect("Invalid Wavefront Obj: The Face's vertex index must be a integer")
+                            }
+                        ).collect::<Vec<isize>>()
+                    );
+                }
+                _ => continue,
+            }
+        }
+
+        for face in faces_index {
+            model.faces.push(
+                face.iter()
+                    .map(|&index| {
+                        let index = if index > 0 {
+                            index as usize
+                        } else {
+                            let i = (model.vertices.len() as isize) - index;
+                            assert!(i > 0, "Invalid Wavefront Obj: Invalid Vertex index");
+                            i as usize
+                        };
+                        model.vertices[index - 1]
+                    })
+                    .collect::<Vec<Vertex>>(),
+            );
+        }
+
+        Ok(model)
     }
 }

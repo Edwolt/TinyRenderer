@@ -109,8 +109,9 @@ impl Image {
                             (a * (v0.x - x) + b * (v0.y - y) + c * v0.z) / c
                         }
                     };
-                    if zbuffer[index(y as usize, x as usize)] < z {
-                        zbuffer[index(y as usize, x as usize)] = z;
+                    let i = index(y as usize, x as usize);
+                    if i < zbuffer.len() as usize && zbuffer[i] < z {
+                        zbuffer[i] = z;
                         self.set(p, color);
                     }
                 }

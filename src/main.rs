@@ -14,8 +14,18 @@ fn main() {
     let mut wire = Image::new(width, height);
     let mut image = Image::new(width, height);
 
+    println!("Opening model");
     let model = Model::new("obj/african_head.obj").expect("Can't open model");
+
+    println!("Wireframe");
+    println!("> Rendering");
     model.wireframe(&mut wire, Color::hex(b"#FFF"));
+
+    println!("> Saving");
+    wire.save("wireframe.bmp").expect("Can't save the image");
+
+    println!("Image");
+    println!("> Rendering");
     model.render(
         &mut image,
         Vertex {
@@ -26,7 +36,8 @@ fn main() {
         Color::hex(b"#FFF"),
     );
 
+    println!("> Saving");
     image.save("image.bmp").expect("Can't save the image");
-    wire.save("wire.bmp").expect("Can't save the image");
+
     println!("Image created with success");
 }
