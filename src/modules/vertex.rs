@@ -48,8 +48,8 @@ impl Vertex {
     }
 
     pub fn to_point(self, width: i32, height: i32) -> Point {
-        let x = (self.x + 1f64) * (width as f64) / 2f64;
-        let y = (self.y + 1f64) * (height as f64) / 2f64;
+        let x = (self.x + 1f64) * ((width - 1) as f64) / 2f64;
+        let y = (self.y + 1f64) * ((height - 1) as f64) / 2f64;
         Point {
             x: x as i32,
             y: y as i32,

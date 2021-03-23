@@ -15,8 +15,8 @@ fn inside_triangle(p: Point, v0: Point, v1: Point, v2: Point) -> bool {
     let cross2 = (v1 - p).cross(v2 - v1);
     let cross3 = (v2 - p).cross(v0 - v2);
 
-    let neg = cross1 < 0 && cross2 < 0 && cross3 < 0;
-    let pos = cross1 > 0 && cross2 > 0 && cross3 > 0;
+    let neg = cross1 <= 0 && cross2 <= 0 && cross3 <= 0;
+    let pos = cross1 >= 0 && cross2 >= 0 && cross3 >= 0;
     neg || pos
 }
 
