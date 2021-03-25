@@ -1,5 +1,9 @@
-# BitMap files
+# Vscode folder
+.vscode/
+
+# Image files
 *.bmp
+*.tga
 
 # Wavefront OBJ File
 obj/

@@ -38,6 +38,14 @@ impl Image {
         }
     }
 
+    pub fn get(&self, Point { x, y }: Point) -> Option<Color> {
+        if 0 <= x && x < self.width && 0 <= y && y < self.height {
+            Some(self.pixels[(y * self.width + x) as usize])
+        } else {
+            None
+        }
+    }
+
     /// Set all image's pixels to color
     #[allow(dead_code)]
     pub fn clear(&mut self, color: Color) {
@@ -284,7 +292,7 @@ impl Image {
     }
 
     /// Save the image as a bitmap
-    pub fn save(&self, path: &str) -> std::io::Result<()> {
+    pub fn save_bmp(&self, path: &str) -> std::io::Result<()> {
         let mut file = File::create(path)?;
 
         let header_size: u32 = 14;
@@ -293,53 +301,53 @@ impl Image {
 
         // * Header
         // Indentify the file
-        file.write_all(b"BM")?; // u8, u8
+        file.write_all(b"BM")?; // 2 ASCII chars
 
         // File size
         let size: u32 = header_size + dib_size + image_size;
-        file.write_all(&size.to_le_bytes())?; // u32
+        file.write_all(&size.to_le_bytes())?; // 4 bytes
 
-        // Unused two fields of 2 bytes
-        file.write_all(&0u16.to_le_bytes())?; // 0u16
-        file.write_all(&0u16.to_le_bytes())?; // 0u16
+        // Unused two fields of 2 bytes (can be 0)
+        file.write_all(&0u16.to_le_bytes())?; // 2 bytes
+        file.write_all(&0u16.to_le_bytes())?; // 2 bytes
 
         // Offset where the image can be found
         let offset: u32 = header_size + dib_size;
-        file.write_all(&offset.to_le_bytes())?; // u32
+        file.write_all(&offset.to_le_bytes())?; // 4 bytes
 
         // * DIB Header (Image Header)
         // DIB file size
-        file.write_all(&dib_size.to_le_bytes())?; // u32
+        file.write_all(&dib_size.to_le_bytes())?; // 4 bytes
 
         // Width and height
-        file.write_all(&self.width.to_le_bytes())?; // i32
-        file.write_all(&self.height.to_le_bytes())?; // i32
+        file.write_all(&self.width.to_le_bytes())?; // 4 bytes (signed)
+        file.write_all(&self.height.to_le_bytes())?; // 4 bytes (signed)
 
         // Number of color planes (Must be 1)
-        file.write_all(&1u16.to_le_bytes())?; // 1u16
+        file.write_all(&1u16.to_le_bytes())?; // 2 bytes
 
         // Color depth
-        file.write_all(&24u16.to_le_bytes())?; // u16
+        file.write_all(&24u16.to_le_bytes())?; // 2 bytes
 
-        // Compression method (0 means None)
-        file.write_all(&0u32.to_le_bytes())?; // u32
+        // Compression method (0 means none)
+        file.write_all(&0u32.to_le_bytes())?; // 4 bytes
 
         // Image size (for none compression can be a dummy 0)
-        file.write_all(&image_size.to_le_bytes())?; // u32
+        file.write_all(&image_size.to_le_bytes())?; // 4 bytes
 
         // Horizontal and vertical pixel per meter
         // (0 means no preference)
-        file.write_all(&0i32.to_le_bytes())?; // i32
-        file.write_all(&0i32.to_le_bytes())?; // i32
+        file.write_all(&0i32.to_le_bytes())?; // 4 bytes (signed)
+        file.write_all(&0i32.to_le_bytes())?; // 4 bytes (signed)
 
         // Number of color used
         // 0 means there is no palette
         // otherwise is the number of color in the color table
-        file.write_all(&0u32.to_le_bytes())?; // u32
+        file.write_all(&0u32.to_le_bytes())?; // 4 bytes
 
         // Number of important color of the palette
         // Used to draw the image on limited displays
-        file.write_all(&0u32.to_le_bytes())?; // u32
+        file.write_all(&0u32.to_le_bytes())?; // 4 bytes
 
         // * Image
         for color in &self.pixels {
@@ -349,6 +357,74 @@ impl Image {
             file.write_all(&r.to_le_bytes())?;
         }
 
+        Ok(())
+    }
+
+    /// Save the image as a Truevision TGA file
+    pub fn save_tga(&self, path: &str, rle: bool) -> std::io::Result<()> {
+        let mut file = File::create(path)?;
+
+        // * Header
+        // ID length
+        file.write_all(&0u8.to_le_bytes())?; // 1 byte
+
+        // Color map type (0 means no color map)
+        file.write_all(&0u8.to_le_bytes())?; // 1 byte
+
+        // Image type (Comprenssion and color types)
+        let image_type = if rle { 10u8 } else { 2u8 };
+        file.write_all(&(image_type).to_le_bytes())?; // 1 byte
+
+        // ** Color map specification
+        // Ignored because color map type is 0
+        // First entry index
+        file.write_all(&0u16.to_le_bytes())?; // 2 bytes
+
+        // Color map length
+        file.write_all(&0u16.to_le_bytes())?; // 2 bytes
+
+        // Color map entry size
+        file.write_all(&0u8.to_le_bytes())?; // 2 bytes
+
+        // ** Image specification
+        // X and Y origin
+        file.write_all(&0u16.to_le_bytes())?; // 2 bytes
+        file.write_all(&0u16.to_le_bytes())?; // 2 bytes
+
+        // Image width and height
+        file.write_all(&(self.width as u16).to_le_bytes())?; // 2 bytes
+        file.write_all(&(self.height as u16).to_le_bytes())?; // 2 bytes
+
+        // Pixel depth
+        file.write_all(&24u8.to_le_bytes())?; // 1 bytes
+
+        // Image descriptor (0 works fine)
+        file.write_all(&0u8.to_le_bytes())?; // 1 byte
+
+        // * Image and color map data
+        // Image ID (we set to 0)
+        // Color Map (we set to no color map)
+        // Image Data
+        if rle {
+            // TODO
+        } else {
+            for color in &self.pixels {
+                let Color { r, g, b } = color;
+                file.write_all(&b.to_le_bytes())?;
+                file.write_all(&g.to_le_bytes())?;
+                file.write_all(&r.to_le_bytes())?;
+            }
+        }
+
+        // * Footer
+        // Extension area offset (0 because we won't use extensio area)
+        file.write_all(&0u32.to_le_bytes())?; // 4 bytes
+
+        // Developer area offset (0 because we won't use extensio area)
+        file.write_all(&0u32.to_le_bytes())?; // 4 bytes
+
+        // Indentify the file
+        file.write_all(b"TRUEVISION-XFILE.\0")?;
         Ok(())
     }
 }
