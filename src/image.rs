@@ -3,6 +3,7 @@ use std::io::Write;
 
 use crate::modules::{Color, Point, Vertex};
 
+// Using i32 because Point use i32
 pub struct Image {
     pub width: i32,
     pub height: i32,

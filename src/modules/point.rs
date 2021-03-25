@@ -1,5 +1,7 @@
 use std::ops::{Add, Mul, Sub};
 
+// Using i32 instead of u32 make signed calculation simpler
+// For exmaple in the cross product
 #[derive(Copy, Clone, Debug)]
 pub struct Point {
     pub x: i32,
@@ -33,6 +35,14 @@ impl Sub for Point {
     }
 }
 
+/// Scalar product
+impl Mul for Point {
+    type Output = i32;
+    fn mul(self, other: Point) -> i32 {
+        self.x * other.x + self.y * other.y
+    }
+}
+
 /// Product with a scalar
 impl Mul<i32> for Point {
     type Output = Point;
@@ -41,13 +51,5 @@ impl Mul<i32> for Point {
             x: self.x * other,
             y: self.y * other,
         }
-    }
-}
-
-/// Scalar product
-impl Mul for Point {
-    type Output = i32;
-    fn mul(self, other: Point) -> i32 {
-        self.x * other.x + self.y * other.y
     }
 }

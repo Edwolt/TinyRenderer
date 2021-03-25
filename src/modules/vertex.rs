@@ -79,6 +79,7 @@ impl ops::Sub for Vertex {
     }
 }
 
+/// Scalar product
 impl ops::Mul for Vertex {
     type Output = f64;
     fn mul(self, other: Vertex) -> f64 {
@@ -86,6 +87,7 @@ impl ops::Mul for Vertex {
     }
 }
 
+/// Product with a scalar
 impl ops::Mul<f64> for Vertex {
     type Output = Vertex;
     fn mul(self, other: f64) -> Vertex {
