@@ -13,13 +13,18 @@ pub struct Image {
 
 /// Test if the point p is inside triangle v0 v1 v2
 fn inside_triangle(p: Point, v0: Point, v1: Point, v2: Point) -> bool {
-    let cross1 = (v0 - p).cross(v1 - v0);
-    let cross2 = (v1 - p).cross(v2 - v1);
-    let cross3 = (v2 - p).cross(v0 - v2);
+    inside_triangle_barycentric(Point::barycentric(p, v0, v1, v2))
+}
 
-    let neg = cross1 <= 0 && cross2 <= 0 && cross3 <= 0;
-    let pos = cross1 >= 0 && cross2 >= 0 && cross3 >= 0;
-    neg || pos
+/// Test if the point is inside the triangle using the barycentric coordinates
+///
+/// For the point p and the triangle v0 v1 v2 do this:
+/// inside_triangle_barycentric(barycentric(p, v0, v1, v2))
+fn inside_triangle_barycentric(bary: Option<(f64, f64, f64)>) -> bool {
+    match bary {
+        Some(bary) => bary.0 >= 0.0 && bary.1 >= 0.0 && bary.2 >= 0.0,
+        None => false,
+    }
 }
 
 impl Image {
@@ -49,7 +54,6 @@ impl Image {
     }
 
     /// Set all image's pixels to color
-    #[allow(dead_code)]
     pub fn clear(&mut self, color: Color) {
         for i in 0..self.pixels.len() {
             self.pixels[i] = color;
@@ -58,7 +62,6 @@ impl Image {
 
     /// Draw the triangle defined by the points v0, v1, v2
     /// filled with color
-    #[allow(dead_code)]
     pub fn triangle(&mut self, v0: Point, v1: Point, v2: Point, color: Color) {
         let max_x = v0.x.max(v1.x).max(v2.x);
         let max_y = v0.y.max(v1.y).max(v2.y);
@@ -77,7 +80,8 @@ impl Image {
 
     /// Draw a triangle defined by the vertexs v0, v1, v2
     /// filled with color
-    /// using a zbuffer to prevent drawing a hidden triangle over other\
+    /// using a zbuffer to prevent drawing a hidden triangle over other
+    ///
     /// zbuffer length must be image.width * image.height
     /// and be filled with f64::NEG_INFINITY
     pub fn triangle_zbuffer(
@@ -104,22 +108,9 @@ impl Image {
         for x in min_x..=max_x {
             for y in min_y..=max_y {
                 let p = Point { x, y };
-                if inside_triangle(p, p0, p1, p2) {
-                    let z = {
-                        let normal = (v0 - v1).cross(v0 - v2);
-                        let Vertex { x: a, y: b, z: c } = normal;
-                        if c == 0.0 {
-                            v0.z
-                        } else {
-                            // let d = -(a * v0.x + b * v0.y + c * v0.z);
-                            // let x = (p.x as f64) * 2.0 / (self.width as f64) - 1.0;
-                            // let y = (p.y as f64) * 2.0 / (self.width as f64) - 1.0;
-                            // (a * x + b * y + d) / (-c)
-                            let x = (p.x as f64) * 2.0 / (self.width as f64) - 1.0;
-                            let y = (p.y as f64) * 2.0 / (self.width as f64) - 1.0;
-                            (a * (v0.x - x) + b * (v0.y - y) + c * v0.z) / c
-                        }
-                    };
+                let bary = Point::barycentric(p, p0, p1, p2);
+                if inside_triangle_barycentric(bary) {
+                    let z = Vertex::lerp(bary, v0, v1, v2).unwrap().z;
                     let i = index(y as usize, x as usize);
                     if i < zbuffer.len() as usize && zbuffer[i] < z {
                         zbuffer[i] = z;
@@ -294,7 +285,6 @@ impl Image {
     }
 
     /// Save the image as a bitmap
-    #[allow(dead_code)]
     pub fn save_bmp(&self, path: &str) -> std::io::Result<()> {
         let mut file = BufWriter::new(File::create(path)?);
 

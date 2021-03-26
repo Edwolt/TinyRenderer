@@ -54,7 +54,7 @@ impl Color {
         }
     }
 
-    pub fn to_bytes(&self) -> [u8; 3] {
+    pub const fn to_bytes(&self) -> [u8; 3] {
         [self.b, self.g, self.r]
     }
 }
