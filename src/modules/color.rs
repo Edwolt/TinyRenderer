@@ -54,10 +54,7 @@ impl Color {
         }
     }
 
-    pub fn to_rgb_bytes(&self) -> [u8; 3] {
-        [self.r, self.g, self.b]
-    }
-    pub fn to_bgr_bytes(&self) -> [u8; 3] {
+    pub fn to_bytes(&self) -> [u8; 3] {
         [self.b, self.g, self.r]
     }
 }

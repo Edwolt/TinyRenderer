@@ -294,6 +294,7 @@ impl Image {
     }
 
     /// Save the image as a bitmap
+    #[allow(dead_code)]
     pub fn save_bmp(&self, path: &str) -> std::io::Result<()> {
         let mut file = BufWriter::new(File::create(path)?);
 
@@ -353,7 +354,7 @@ impl Image {
 
         // * Image
         for &color in &self.pixels {
-            file.write_all(&color.to_bgr_bytes())?;
+            file.write_all(&color.to_bytes())?;
         }
 
         file.flush()?;
@@ -361,7 +362,7 @@ impl Image {
     }
 
     /// Save the image as a Truevision TGA file
-    pub fn save_tga(&self, path: &str, mut rle: bool) -> std::io::Result<()> {
+    pub fn save_tga(&self, path: &str, rle: bool) -> std::io::Result<()> {
         let mut file = BufWriter::new(File::create(path)?);
 
         // * Header
@@ -406,193 +407,71 @@ impl Image {
         // Color Map (we set to no color map)
         // Image Data
 
-        // My rle algorithm needs at least 2 pixels
-        rle = if self.pixels.len() <= 2 { false } else { rle };
-
         if rle {
-            const MAX_COUNT: u8 = 0b01111111;
-            const RLE: u8 = 0b10000000; // Mark counter as rle
+            for y in 0..self.height {
+                let first = self.get(Point { x: 0, y }).unwrap();
+                let mut rle: Vec<(u32, Color)> = vec![(1, first)];
 
-            let mut raw_packet: VecDeque<Color> = VecDeque::new();
-            let mut it = self.pixels.iter();
-            let mut counter: usize = 0;
+                for x in 1..self.width {
+                    let cur = self.get(Point { x, y }).unwrap();
 
-            let mut last: Color = *it.next().unwrap();
-            let mut cur: Color = *it.next().unwrap();
-            let mut line: i32 = 2;
-
-            'outer_loop: loop {
-                loop {
-                    // line loop
-
-                    'rle_loop: while last == cur {
-                        counter += 1; // Add cur to rle_packet
-
-                        // last = cur; cur = next;
-                        cur = match &it.next() {
-                            Some(&next) => next,
-                            None => {
-                                println!("EOF RLE: {} -> {:?}", counter + 1, last);
-
-                                // Write rle_packet
-                                while counter > (MAX_COUNT as usize) {
-                                    file.write_all(&(MAX_COUNT | RLE).to_le_bytes())?;
-                                    file.write_all(&last.to_rgb_bytes())?;
-                                    counter -= (MAX_COUNT as usize) + 1;
-                                }
-                                file.write_all(&(counter as u8 | RLE).to_le_bytes())?;
-                                file.write_all(&last.to_rgb_bytes())?;
-                                // counter = 0;
-
-                                break 'outer_loop;
-                            }
-                        };
-                        line += 1;
-
-                        if line == self.width {
-                            if last == cur {
-                                println!("LIN RLE ADD");
-                                counter += 1;
-                            } else {
-                                // Write rle_packet
-                                println!("LIN RLE: {} -> {:?}", counter + 1, last);
-
-                                while counter > (MAX_COUNT as usize) {
-                                    file.write_all(&(MAX_COUNT | RLE).to_le_bytes())?;
-                                    file.write_all(&last.to_rgb_bytes())?;
-                                    counter -= (MAX_COUNT as usize) + 1;
-                                }
-                                file.write_all(&(counter as u8 | RLE).to_le_bytes())?;
-                                file.write_all(&last.to_rgb_bytes())?;
-                                counter = 0;
-
-                                println!("LAS RAW: {} -> {:?}", counter + 1, cur);
-                                // Write cur
-                                file.write_all(&0u8.to_le_bytes())?;
-                                file.write_all(&cur.to_rgb_bytes())?;
-                            }
-
-                            line = 0;
-                            break 'rle_loop;
-                        }
+                    let last = rle.last_mut().unwrap();
+                    let (count, color) = *last;
+                    if color == cur {
+                        *last = (count + 1, color);
+                    } else {
+                        rle.push((1, cur));
                     }
-                    if counter != 0 {
-                        println!("DIF RLE: {} -> {:?}", counter + 1, last);
-                        // Write rle_packet
-                        while counter > (MAX_COUNT as usize) {
+                }
+
+                const MAX_COUNT: u8 = 0b01111111;
+                const RLE: u8 = 0b10000000; // Mark counter as rle
+                let mut raw: VecDeque<Color> = VecDeque::new();
+                for (mut count, color) in rle {
+                    if count == 1 {
+                        raw.push_back(color);
+                    } else {
+                        if !raw.is_empty() {
+                            // Write raw packet
+                            while raw.len() - 1 > (MAX_COUNT as usize) {
+                                file.write_all(&MAX_COUNT.to_le_bytes())?;
+                                for _ in 0..MAX_COUNT + 1 {
+                                    file.write_all(&raw.pop_front().unwrap().to_bytes())?;
+                                }
+                            }
+                            let len = (raw.len() as u8) - 1;
+                            file.write_all(&len.to_le_bytes())?;
+                            for &color in &raw {
+                                file.write_all(&color.to_bytes())?;
+                            }
+                            raw.clear();
+                        }
+
+                        // Write rle packet
+                        while count - 1 > (MAX_COUNT as u32) {
                             file.write_all(&(MAX_COUNT | RLE).to_le_bytes())?;
-                            file.write_all(&last.to_rgb_bytes())?;
-                            counter -= (MAX_COUNT as usize) + 1;
+                            file.write_all(&color.to_bytes())?;
+                            count -= (MAX_COUNT as u32) + 1;
                         }
-                        file.write_all(&(counter as u8 | RLE).to_le_bytes())?;
-                        file.write_all(&last.to_rgb_bytes())?;
-                        counter = 0;
+                        let count = ((count as u8) - 1) | RLE;
+                        file.write_all(&count.to_le_bytes())?;
+                        file.write_all(&color.to_bytes())?;
                     }
-
-                    'raw_loop: while last != cur {
-                        raw_packet.push_back(last);
-
-                        // last = cur; cur = next;
-                        last = cur;
-                        cur = match &it.next() {
-                            Some(&next) => next,
-                            None => {
-                                raw_packet.push_back(cur);
-
-                                // Write raw_packet
-                                let mut len = (raw_packet.len() as usize) - 1;
-                                println!("EOF RAW: {} -> Vec ...", len + 1);
-                                while len > (MAX_COUNT as usize) {
-                                    file.write_all(&MAX_COUNT.to_le_bytes())?;
-                                    for _i in 0..MAX_COUNT + 1 {
-                                        let color = raw_packet.pop_front().unwrap();
-                                        file.write_all(&color.to_rgb_bytes())?;
-                                    }
-                                    len -= (MAX_COUNT as usize) + 1;
-                                }
-                                len = (raw_packet.len() as usize) - 1;
-                                file.write_all(&len.to_le_bytes())?;
-                                for &color in &raw_packet {
-                                    file.write(&color.to_rgb_bytes())?;
-                                }
-                                // raw_packet.clear();
-
-                                break 'outer_loop;
-                            }
-                        };
-                        line += 1;
-
-                        if line == self.width {
-                            if last != cur {
-                                raw_packet.push_back(last);
-                                raw_packet.push_back(cur);
-
-                                // last = next; cur = next_of_next;
-                                last = match &it.next() {
-                                    Some(&next) => next,
-                                    None => {
-                                        println!("EOF NIL");
-                                        break 'outer_loop;
-                                    }
-                                };
-                                cur = match &it.next() {
-                                    Some(&next) => next,
-                                    None => {
-                                        println!("EDF RAW: 1 -> {:?}", last);
-
-                                        file.write_all(&0u8.to_le_bytes())?;
-                                        file.write_all(&last.to_rgb_bytes())?;
-                                        break 'outer_loop;
-                                    }
-                                };
-                            } else {
-                                // Write raw_packet
-                                let mut len = (raw_packet.len() as usize) - 1;
-                                println!("LIN RAW: {} -> Vec ...", len + 1);
-                                while len > (MAX_COUNT as usize) {
-                                    file.write_all(&MAX_COUNT.to_le_bytes())?;
-                                    for _i in 0..MAX_COUNT + 1 {
-                                        let color = raw_packet.pop_front().unwrap();
-                                        file.write_all(&color.to_rgb_bytes())?;
-                                    }
-                                    len -= (MAX_COUNT as usize) + 1;
-                                }
-                                len = (raw_packet.len() as usize) - 1;
-                                file.write_all(&len.to_le_bytes())?;
-                                for &color in &raw_packet {
-                                    file.write(&color.to_rgb_bytes())?;
-                                }
-                                raw_packet.clear();
-
-                                // Write last and cur as rle_packet
-                                println!("LAS RLE: 2 -> {:?}", last);
-                                file.write_all(&(1u8 | RLE).to_le_bytes())?;
-                                file.write(&last.to_rgb_bytes())?;
-                            }
-
-                            line = 0;
-                            break 'raw_loop;
+                }
+                if !raw.is_empty() {
+                    // Write raw packet
+                    while raw.len() - 1 > (MAX_COUNT as usize) {
+                        file.write_all(&MAX_COUNT.to_le_bytes())?;
+                        for _ in 0..MAX_COUNT + 1 {
+                            file.write_all(&raw.pop_front().unwrap().to_bytes())?;
                         }
                     }
-                    if !raw_packet.is_empty() {
-                        let mut len = (raw_packet.len() as usize) - 1;
-                        println!("EQ  RAW: {} -> Vec {:?}", len + 1, raw_packet);
-                        println!("MAO: {:?} {:?}", last, cur);
-                        while len > (MAX_COUNT as usize) {
-                            file.write_all(&MAX_COUNT.to_le_bytes())?;
-                            for _i in 0..MAX_COUNT + 1 {
-                                let color = raw_packet.pop_front().unwrap();
-                                file.write_all(&color.to_rgb_bytes())?;
-                            }
-                            len -= (MAX_COUNT as usize) + 1;
-                        }
-                        len = (raw_packet.len() as usize) - 1;
-                        file.write_all(&len.to_le_bytes())?;
-                        for &color in &raw_packet {
-                            file.write(&color.to_rgb_bytes())?;
-                        }
-                        raw_packet.clear();
+                    let len = (raw.len() as u8) - 1;
+                    file.write_all(&len.to_le_bytes())?;
+                    for &color in &raw {
+                        file.write_all(&color.to_bytes())?;
                     }
+                    raw.clear();
                 }
             }
         } else {
