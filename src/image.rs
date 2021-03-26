@@ -1,4 +1,5 @@
 use std::fs::File;
+use std::io::BufWriter;
 use std::io::Write;
 
 use crate::modules::{Color, Point, Vertex};
@@ -293,7 +294,7 @@ impl Image {
 
     /// Save the image as a bitmap
     pub fn save_bmp(&self, path: &str) -> std::io::Result<()> {
-        let mut file = File::create(path)?;
+        let mut file = BufWriter::new(File::create(path)?);
 
         let header_size: u32 = 14;
         let dib_size: u32 = 40;
@@ -301,7 +302,7 @@ impl Image {
 
         // * Header
         // Indentify the file
-        file.write_all(b"BM")?; // 2 ASCII chars
+        file.write(b"BM")?; // 2 ASCII chars
 
         // File size
         let size: u32 = header_size + dib_size + image_size;
@@ -362,7 +363,7 @@ impl Image {
 
     /// Save the image as a Truevision TGA file
     pub fn save_tga(&self, path: &str, rle: bool) -> std::io::Result<()> {
-        let mut file = File::create(path)?;
+        let mut file = BufWriter::new(File::create(path)?);
 
         // * Header
         // ID length
