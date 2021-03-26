@@ -39,6 +39,7 @@ impl Image {
         }
     }
 
+    /// Get the color of pixel at (p.x, p.y)
     pub fn get(&self, Point { x, y }: Point) -> Option<Color> {
         if 0 <= x && x < self.width && 0 <= y && y < self.height {
             Some(self.pixels[(y * self.width + x) as usize])
@@ -351,18 +352,16 @@ impl Image {
         file.write_all(&0u32.to_le_bytes())?; // 4 bytes
 
         // * Image
-        for color in &self.pixels {
-            let Color { r, g, b } = color;
-            file.write_all(&b.to_le_bytes())?;
-            file.write_all(&g.to_le_bytes())?;
-            file.write_all(&r.to_le_bytes())?;
+        for &color in &self.pixels {
+            file.write_all(&color.to_bgr_bytes())?;
         }
 
+        file.flush()?;
         Ok(())
     }
 
     /// Save the image as a Truevision TGA file
-    pub fn save_tga(&self, path: &str, rle: bool) -> std::io::Result<()> {
+    pub fn save_tga(&self, path: &str, mut rle: bool) -> std::io::Result<()> {
         let mut file = BufWriter::new(File::create(path)?);
 
         // * Header
@@ -406,14 +405,248 @@ impl Image {
         // Image ID (we set to 0)
         // Color Map (we set to no color map)
         // Image Data
+
+        // My rle algorithm needs at least 2 pixels
+        rle = if self.pixels.len() <= 2 { false } else { rle };
+
         if rle {
-            // TODO
+            const MAX_COUNT: u8 = 0b01111111;
+            const RLE: u8 = 0b10000000; // Mark counter as rle
+            let mut raw_packet: Vec<Color> = Vec::new();
+            let mut it = self.pixels.iter();
+
+            let mut last: Color = *it.next().unwrap();
+            let mut cur: Color = *it.next().unwrap();
+            let mut line: i32 = 2;
+            let mut counter: u8 = 0;
+
+            'outer_loop: loop {
+                'line_loop: loop {
+                    while last == cur {
+                        counter += 1;
+
+                        // Run untlil a couter < MAX_COUNT
+                        if counter == MAX_COUNT {
+                            // Write
+                            let Color { r, g, b } = last;
+                            file.write_all(&[MAX_COUNT | RLE, r, g, b])?;
+
+                            // Next two colors
+                            last = match &it.next() {
+                                Some(&color) => color,
+                                None => {
+                                    // Break
+                                    break 'outer_loop;
+                                }
+                            };
+                            cur = match &it.next() {
+                                Some(&color) => color,
+                                None => {
+                                    // Write and break
+                                    file.write_all(&1u8.to_le_bytes())?;
+                                    file.write_all(&last.to_rgb_bytes())?;
+                                    break 'outer_loop;
+                                }
+                            };
+
+                            counter = 0;
+                            continue 'line_loop;
+                        }
+
+                        match &it.next() {
+                            Some(&next) => {
+                                line += 1;
+                                if line == self.width {
+                                    if counter + 1 < MAX_COUNT && cur == next {
+                                        // Write until next
+                                        counter += 1;
+                                        file.write_all(&(counter | RLE).to_le_bytes())?;
+                                        file.write_all(&cur.to_rgb_bytes())?;
+                                    } else {
+                                        // Write until cur
+                                        file.write_all(&(counter | RLE).to_le_bytes())?;
+                                        file.write_all(&cur.to_rgb_bytes())?;
+
+                                        // Write next
+                                        file.write_all(&0u8.to_le_bytes())?;
+                                        file.write_all(&next.to_rgb_bytes())?;
+                                    }
+
+                                    // Next two colors
+                                    last = match &it.next() {
+                                        Some(&color) => color,
+                                        None => {
+                                            break 'outer_loop;
+                                        }
+                                    };
+                                    cur = match &it.next() {
+                                        Some(&color) => color,
+                                        None => {
+                                            // Write and break
+                                            file.write_all(&0u8.to_le_bytes())?;
+                                            file.write_all(&last.to_rgb_bytes())?;
+                                            break 'outer_loop;
+                                        }
+                                    };
+
+                                    line = 0;
+                                    counter = 0;
+                                    continue 'line_loop;
+                                }
+
+                                // last = cur;
+                                cur = next;
+                            }
+                            None => {
+                                // Write and break
+                                file.write_all(&(counter | RLE).to_le_bytes())?;
+                                file.write_all(&cur.to_rgb_bytes())?;
+
+                                break 'outer_loop;
+                            }
+                        }
+                    }
+                    if counter != 0 {
+                        // Write
+                        file.write_all(&(counter | RLE).to_le_bytes())?;
+                        file.write_all(&cur.to_rgb_bytes())?;
+
+                        counter = 0;
+                    }
+
+                    while last != cur {
+                        raw_packet.push(last);
+
+                        let len = (raw_packet.len() - 1) as u8;
+                        if len == MAX_COUNT {
+                            // Write all in raw_packet
+                            file.write_all(&len.to_le_bytes())?;
+                            for &color in &raw_packet {
+                                file.write_all(&color.to_rgb_bytes())?;
+                            }
+
+                            last = cur;
+                            cur = match &it.next() {
+                                Some(&color) => color,
+                                None => {
+                                    // Write
+                                    file.write_all(&last.to_rgb_bytes())?;
+                                    break 'outer_loop;
+                                }
+                            };
+
+                            raw_packet.clear();
+                            continue 'line_loop;
+                        }
+
+                        match &it.next() {
+                            Some(&next) => {
+                                line += 1;
+                                if line == self.width {
+                                    if cur == next {
+                                        let len = (raw_packet.len() - 1) as u8;
+                                        file.write_all(&len.to_le_bytes())?;
+                                        for &color in &raw_packet {
+                                            file.write_all(&color.to_rgb_bytes())?;
+                                        }
+
+                                        file.write_all(&(1 | RLE).to_le_bytes())?;
+                                        file.write_all(&cur.to_rgb_bytes())?;
+                                        file.write_all(&next.to_rgb_bytes())?;
+
+                                        // Next two colors
+                                        last = match &it.next() {
+                                            Some(&color) => color,
+                                            None => {
+                                                break 'outer_loop;
+                                            }
+                                        };
+                                        cur = match &it.next() {
+                                            Some(&color) => color,
+                                            None => {
+                                                // Write and break
+                                                file.write_all(&0u8.to_le_bytes())?;
+                                                file.write_all(&last.to_rgb_bytes())?;
+                                                break 'outer_loop;
+                                            }
+                                        };
+                                        continue 'line_loop;
+                                    } else {
+                                        let len = (raw_packet.len() - 1) as u8;
+                                        if len + 1 < MAX_COUNT {
+                                            // Fit at least 2 more values
+                                            raw_packet.push(cur);
+                                            raw_packet.push(next);
+
+                                            // Write what remind from line
+                                            let len = (raw_packet.len() - 1) as u8;
+                                            file.write_all(&len.to_le_bytes())?;
+                                            for &color in &raw_packet {
+                                                file.write_all(&color.to_rgb_bytes())?;
+                                            }
+                                        } else if len + 1 == MAX_COUNT {
+                                            // Fit one more values
+                                            raw_packet.push(cur);
+
+                                            // Write until cur
+                                            let len = (raw_packet.len() - 1) as u8;
+                                            file.write_all(&len.to_le_bytes())?;
+                                            for &color in &raw_packet {
+                                                file.write_all(&color.to_rgb_bytes())?;
+                                            }
+
+                                            // Write next
+                                            file.write_all(&0u8.to_le_bytes())?;
+                                            file.write_all(&next.to_rgb_bytes())?;
+                                        } else if len == MAX_COUNT {
+                                            // Fit no more values
+
+                                            // Write what in packet
+                                            // let len = (raw_packet.len() - 1) as u8;
+                                            file.write_all(&len.to_le_bytes())?;
+                                            for &color in &raw_packet {
+                                                file.write_all(&color.to_rgb_bytes())?;
+                                            }
+
+                                            // Write cur and next
+                                            file.write_all(&1u8.to_le_bytes())?;
+                                            file.write_all(&cur.to_rgb_bytes())?;
+                                            file.write_all(&next.to_rgb_bytes())?;
+                                        }
+                                    }
+
+                                    raw_packet.clear();
+                                    continue 'line_loop;
+                                }
+
+                                last = cur;
+                                cur = next;
+                            }
+                            None => {
+                                // Write and break
+                                let len = (raw_packet.len() - 1) as u8;
+                                file.write_all(&len.to_le_bytes())?;
+                                for &color in &raw_packet {
+                                    file.write_all(&color.to_rgb_bytes())?;
+                                }
+                                break 'outer_loop;
+                            }
+                        }
+                    }
+                    if !raw_packet.is_empty() {
+                        let len = (raw_packet.len() - 1) as u8;
+                        file.write_all(&len.to_le_bytes())?;
+                        for &color in &raw_packet {
+                            file.write_all(&color.to_rgb_bytes())?;
+                        }
+                        raw_packet.clear();
+                    }
+                }
+            }
         } else {
-            for color in &self.pixels {
+            for &color in &self.pixels {
                 let Color { r, g, b } = color;
-                file.write_all(&b.to_le_bytes())?;
-                file.write_all(&g.to_le_bytes())?;
-                file.write_all(&r.to_le_bytes())?;
+                file.write_all(&[r, g, b])?;
             }
         }
 
@@ -426,6 +659,8 @@ impl Image {
 
         // Indentify the file
         file.write_all(b"TRUEVISION-XFILE.\0")?;
+
+        file.flush()?;
         Ok(())
     }
 }

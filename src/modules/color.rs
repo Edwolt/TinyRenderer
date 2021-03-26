@@ -1,6 +1,6 @@
 use std::ops::Mul;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
@@ -52,6 +52,13 @@ impl Color {
             }
             _ => Color { r: 0, g: 0, b: 0 },
         }
+    }
+
+    pub fn to_rgb_bytes(&self) -> [u8; 3] {
+        [self.r, self.g, self.b]
+    }
+    pub fn to_bgr_bytes(&self) -> [u8; 3] {
+        [self.b, self.g, self.r]
     }
 }
 

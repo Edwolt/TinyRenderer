@@ -25,7 +25,7 @@ fn main() {
     wire.save_bmp("wireframe.bmp")
         .expect("Can't save the image");
 
-    wire.save_tga("wireframe.tga", false)
+    wire.save_tga("wireframe.tga", true)
         .expect("Can't save the image");
 
     println!("Image");
@@ -41,7 +41,9 @@ fn main() {
     );
 
     println!("> Saving");
-    img.save_tga("image.tga", false)
+    img.save_bmp("image.bmp").expect("Can't save the image");
+
+    img.save_tga("image.tga", true)
         .expect("Can't save the image");
 
     println!("Image created with success");
