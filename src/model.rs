@@ -4,10 +4,11 @@ use std::io::Read;
 use crate::image::Image;
 use crate::modules::{Color, Vertex, Vertex2};
 
+type Element = (isize, Option<isize>);
 pub struct Model {
     vertices: Vec<Vertex>,
     textures: Vec<Vertex2>,
-    faces: Vec<Vec<(isize, Option<isize>)>>,
+    faces: Vec<Vec<Element>>,
 }
 
 impl Model {
@@ -99,31 +100,33 @@ impl Model {
                         .expect("Invalid Wavefront Obj: Texture Vertex coordinate must be a float"),
                 }),
                 Some("f") => {
-                    model.faces.push(
-                        data.map(|element| {
-                                let mut element = element.split("/");
-                                let vertex_index = element
-                                    .next()
-                                    .expect("Invalid Wavefront Obj: The Face's vertex index must be a integer")
+                    let mut face: Vec<Element> = Vec::new();
+                    for element in data {
+                        let mut element = element.split("/");
+                        let vertex_index = element
+                            .next()
+                            .expect(
+                                "Invalid Wavefront Obj: The Face's vertex index must be a integer",
+                            )
+                            .trim()
+                            .parse::<isize>()
+                            .expect(
+                                "Invalid Wavefront Obj: The Face's vertex index must be a integer",
+                            );
+
+                        let texture_index = match element.next() {
+                            Some(string) => {
+                                Some(string
                                     .trim()
                                     .parse::<isize>()
-                                    .expect("Invalid Wavefront Obj: The Face's vertex index must be a integer");
-
-                                let texture_index:Option<isize> = match element.next() {
-                                    None => None,
-                                    Some(string) => {
-                                        Some(string
-                                            .trim()
-                                            .parse::<isize>()
-                                            .expect("Invalid Wavefront Obj: The Face's texture vertex index must be a integer")
-                                        )
-                                    },
-                                };
-
-                                (vertex_index, texture_index)
+                                    .expect("Invalid Wavefront Obj: The Face's texture vertex index must be a integer")
+                                )
                             }
-                        ).collect::<Vec<(isize, Option<isize>)>>()
-                    );
+                            None => None,
+                        };
+                        face.push((vertex_index, texture_index));
+                    }
+                    model.faces.push(face);
                 }
                 _ => continue,
             }
