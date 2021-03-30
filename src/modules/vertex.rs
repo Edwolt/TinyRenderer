@@ -3,11 +3,16 @@ use std::ops;
 use super::Point;
 
 #[derive(Copy, Clone, Debug)]
+pub struct Vertex2 {
+    pub x: f64,
+    pub y: f64,
+}
+
+#[derive(Copy, Clone, Debug)]
 pub struct Vertex {
     pub x: f64,
     pub y: f64,
     pub z: f64,
-    // w: f64,
 }
 
 impl Vertex {

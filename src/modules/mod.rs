@@ -6,3 +6,4 @@ pub use point::Point;
 
 mod vertex;
 pub use vertex::Vertex;
+pub use vertex::Vertex2;
