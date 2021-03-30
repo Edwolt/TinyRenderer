@@ -294,7 +294,7 @@ impl Image {
 
         // * Header
         // Indentify the file
-        file.write(b"BM")?; // 2 ASCII chars
+        file.write_all(b"BM")?; // 2 ASCII chars
 
         // File size
         let size: u32 = header_size + dib_size + image_size;
@@ -375,7 +375,7 @@ impl Image {
         file.write_all(&0u16.to_le_bytes())?; // 2 bytes
 
         // Color map entry size
-        file.write_all(&0u8.to_le_bytes())?; // 2 bytes
+        file.write_all(&0u8.to_le_bytes())?; // 1 byte
 
         // ** Image specification
         // X and Y origin
