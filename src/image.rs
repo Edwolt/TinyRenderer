@@ -1,6 +1,9 @@
-use std::io::BufWriter;
-use std::io::Write;
-use std::{collections::VecDeque, fs::File};
+use std::collections::VecDeque;
+use std::convert::TryInto;
+use std::fs::File;
+use std::io::{BufReader, BufWriter};
+use std::io::{Read, Write};
+use std::io::{Seek, SeekFrom};
 
 use crate::modules::{Color, Point, Vertex};
 
@@ -60,6 +63,26 @@ impl Image {
         }
     }
 
+    pub fn flip_vertically(&mut self) {
+        let mut pixels: Vec<Color> = Vec::new();
+        for y in (0..self.height).rev() {
+            for x in 0..self.width {
+                pixels.push(self.get(Point { x, y }).unwrap());
+            }
+        }
+        self.pixels = pixels;
+    }
+
+    pub fn flip_horizontally(&mut self) {
+        let mut pixels: Vec<Color> = Vec::new();
+        for y in 0..self.height {
+            for x in (0..self.width).rev() {
+                pixels.push(self.get(Point { x, y }).unwrap());
+            }
+        }
+        self.pixels = pixels;
+    }
+
     /// Draw the triangle defined by the points v0, v1, v2
     /// filled with color
     pub fn triangle(&mut self, v0: Point, v1: Point, v2: Point, color: Color) {
@@ -100,10 +123,10 @@ impl Image {
         let p1 = v1.to_point(self.width, self.height);
         let p2 = v2.to_point(self.width, self.height);
 
-        let max_x = p0.x.max(p1.x).max(p2.x) + 1;
-        let max_y = p0.y.max(p1.y).max(p2.y) + 1;
-        let min_x = p0.x.min(p1.x).min(p2.x) - 1;
-        let min_y = p0.y.min(p1.y).min(p2.y) - 1;
+        let max_x = (p0.x.max(p1.x).max(p2.x) + 10).min(self.width - 1);
+        let max_y = (p0.y.max(p1.y).max(p2.y) + 10).min(self.height - 1);
+        let min_x = (p0.x.min(p1.x).min(p2.x) - 10).max(0);
+        let min_y = (p0.y.min(p1.y).min(p2.y) - 10).max(0);
 
         for x in min_x..=max_x {
             for y in min_y..=max_y {
@@ -483,5 +506,122 @@ impl Image {
 
         file.flush()?;
         Ok(())
+    }
+
+    pub fn load_tga(path: &str) -> std::io::Result<Image> {
+        let mut file = BufReader::new(File::open(path)?);
+        let mut buffer = [0u8; 4];
+
+        // * Header
+        // ID length
+        file.read_exact(&mut buffer[..1])?;
+        let image_id_length = u8::from_le_bytes(buffer[..1].try_into().unwrap()); // 1 byte
+
+        // Color map type
+        file.read_exact(&mut buffer[..1])?;
+        let color_map = u8::from_le_bytes(buffer[..1].try_into().unwrap()); // 1 byte
+        assert_eq!(
+            color_map, 0,
+            "Load TGA: Color map {} not implemented!",
+            color_map
+        );
+
+        // Image type (Comprenssion and color types)
+        file.read_exact(&mut buffer[..1])?;
+        let image_type = u8::from_le_bytes(buffer[..1].try_into().unwrap()); // 1 byte
+        let rle = match image_type {
+            2u8 => false,
+            10u8 => true,
+            _ => panic!("Load TGA: Image type {} not implemented", image_type),
+        };
+
+        // ** Color Map specification
+        // Ignored because color map type is 0
+        // First entry index // 2 bytes
+        // Color map length // 2 bytes
+        // Color map entry size // 1 byte
+        file.seek(SeekFrom::Current(5))?;
+
+        // ** Image specification
+        // X and Y origin
+        file.read_exact(&mut buffer[..4])?;
+        let x_origin = u16::from_le_bytes(buffer[..2].try_into().unwrap()); // 2 bytes
+        let y_origin = u16::from_le_bytes(buffer[2..4].try_into().unwrap()); // 2 bytes
+        if x_origin != 0 || y_origin != 0 {
+            panic!("Load TGA: Only origin (0,0) is implemented");
+        }
+
+        // Image width and height
+        file.read_exact(&mut buffer[..4])?;
+        let width = u16::from_le_bytes(buffer[..2].try_into().unwrap()); // 2 bytes
+        let height = u16::from_le_bytes(buffer[2..4].try_into().unwrap()); // 2 bytes
+
+        // Pixel depth
+        file.read_exact(&mut buffer[..1])?;
+        let color_depth = u8::from_le_bytes(buffer[..1].try_into().unwrap()); // 1 bytes
+        assert_eq!(
+            color_depth, 24,
+            "Load TGA: Color depth {} not implemented",
+            color_depth
+        );
+
+        // Image descriptor (0 works fine)
+        file.read_exact(&mut buffer[..1])?;
+        let descriptor = u8::from_le_bytes(buffer[..1].try_into().unwrap()); // 1 bytes
+        assert_eq!(
+            descriptor & 0b1100111,
+            0u8,
+            "Load TGA: Image Descriptor {} not implemented",
+            descriptor
+        );
+        let flip_horizontally = (descriptor & 0b0001000) != 0;
+        let flip_vertically = (descriptor & 0b0010000) != 0;
+
+        // * Image and color map data
+        // Image ID
+        file.seek(SeekFrom::Current(image_id_length as i64))?;
+        // Color Map (we assert to no color map)
+        // Image Data
+        let mut image = Image::new(width as i32, height as i32);
+        image.pixels.clear();
+        if rle {
+            while image.pixels.len() < (width as usize) * (height as usize) {
+                file.read_exact(&mut buffer[..1])?;
+                let packet_size = u8::from_le_bytes(buffer[..1].try_into().unwrap());
+
+                if packet_size & 0b10000000 == 0 {
+                    // Raw packet
+                    for _ in 0..=packet_size {
+                        file.read_exact(&mut buffer[..3])?;
+                        let color = Color::from_bytes(buffer[..3].try_into().unwrap());
+                        image.pixels.push(color)
+                    }
+                } else {
+                    // Rle packet
+                    let packet_size = packet_size & 0b01111111;
+                    file.read_exact(&mut buffer[..3])?;
+                    let color = Color::from_bytes(buffer[..3].try_into().unwrap());
+                    for _ in 0..=packet_size {
+                        image.pixels.push(color);
+                    }
+                }
+            }
+        } else {
+            for _ in 0..(width * height) {
+                file.read_exact(&mut buffer[..3])?;
+                let color = Color::from_bytes(buffer[..3].try_into().unwrap());
+                image.pixels.push(color);
+            }
+        }
+
+        // There is nothing important for this algorithm in the rest of the file
+        if flip_horizontally {
+            image.flip_horizontally();
+        }
+        if flip_vertically {
+            image.flip_vertically();
+        }
+
+        Ok(image)
     }
 }

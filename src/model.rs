@@ -10,6 +10,7 @@ pub struct Model {
 }
 
 impl Model {
+    /// Wireframe Render
     pub fn wireframe(&self, image: &mut Image, color: Color) {
         for face in &self.faces {
             let mut v = match face.last() {

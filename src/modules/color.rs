@@ -57,6 +57,11 @@ impl Color {
     pub const fn to_bytes(&self) -> [u8; 3] {
         [self.b, self.g, self.r]
     }
+
+    pub const fn from_bytes(buffer: [u8; 3]) -> Color {
+        let [b, g, r] = buffer;
+        Color { r, g, b }
+    }
 }
 
 impl Mul<f64> for Color {

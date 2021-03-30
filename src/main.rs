@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod modules;
 use modules::{Color, Vertex};
 
@@ -11,26 +13,26 @@ fn main() {
     let width = 500;
     let height = 500;
 
-    let mut wire = Image::new(width, height);
+    // let mut wire = Image::new(width, height);
     let mut img = Image::new(width, height);
 
     println!("Opening model");
     let model = Model::new("obj/african_head.obj").expect("Can't open model");
 
-    println!("Wireframe");
-    println!("> Rendering");
-    model.wireframe(&mut wire, Color::hex(b"#FFF"));
+    // println!("Wireframe");
+    // println!("> Rendering");
+    // model.wireframe(&mut wire, Color::hex(b"#FFF"));
 
-    println!("> Saving");
-    wire.save_tga("wireframe.tga", true)
-        .expect("Can't save the image");
+    // println!("> Saving");
+    // wire.save_tga("wireframe.tga", true)
+    //     .expect("Can't save the image");
 
     println!("Image");
     println!("> Rendering");
     model.render(
         &mut img,
         Vertex {
-            x: 0.0,
+            x: 0.3,
             y: 0.0,
             z: -1.0,
         },
