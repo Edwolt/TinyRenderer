@@ -11,10 +11,12 @@ pub struct Point {
 }
 
 impl Point {
-    /// Caculate barycentric coordinates of a point P using the triangle ΔABC
-    pub fn barycentric(p: Point, a: Point, b: Point, c: Point) -> Option<(f64, f64, f64)> {
+    /// Caculate barycentric coordinates of a point P using the triangle
+    pub fn barycentric(p: Point, triangle: (Point, Point, Point)) -> Option<(f64, f64, f64)> {
         // Barycentric coordinates is the (α, β, 𝛾) where
         // P = α*A + β*B + 𝛾*C and α + β + 𝛾 = 1
+
+        let (a, b, c) = triangle;
 
         let ab = b - a;
         let ac = c - a;
@@ -46,10 +48,9 @@ impl Point {
     /// Linear interpolation
     pub fn lerp(
         barycentric: Option<(f64, f64, f64)>,
-        a: Point,
-        b: Point,
-        c: Point,
+        triangle: (Point, Point, Point),
     ) -> Option<Point> {
+        let (a, b, c) = triangle;
         match barycentric {
             Some((alpha, beta, gamma)) => Some(Point {
                 x: ((a.x as f64) * alpha + (b.x as f64) * beta + (c.x as f64) * gamma) as i32,
@@ -59,7 +60,7 @@ impl Point {
         }
     }
 
-    /// Cross product
+    /// Cross product norm with z = 0
     pub const fn cross(self, other: Point) -> i32 {
         self.x * other.y - self.y * other.x
     }

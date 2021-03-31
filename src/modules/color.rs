@@ -1,5 +1,3 @@
-use std::ops::Mul;
-
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Color {
     pub r: u8,
@@ -54,6 +52,19 @@ impl Color {
         }
     }
 
+    /// Return a color with the intesity changed
+    pub fn gamma(&self, intensity: f64) -> Color {
+        if intensity > 0.0 {
+            Color {
+                r: ((self.r as f64) * intensity) as u8,
+                g: ((self.g as f64) * intensity) as u8,
+                b: ((self.b as f64) * intensity) as u8,
+            }
+        } else {
+            Color::hex(b"#000")
+        }
+    }
+
     pub const fn to_bytes(&self) -> [u8; 3] {
         [self.b, self.g, self.r]
     }
@@ -61,16 +72,5 @@ impl Color {
     pub const fn from_bytes(buffer: [u8; 3]) -> Color {
         let [b, g, r] = buffer;
         Color { r, g, b }
-    }
-}
-
-impl Mul<f64> for Color {
-    type Output = Color;
-    fn mul(self, other: f64) -> Color {
-        Color {
-            r: ((self.r as f64) * other) as u8,
-            g: ((self.g as f64) * other) as u8,
-            b: ((self.b as f64) * other) as u8,
-        }
     }
 }

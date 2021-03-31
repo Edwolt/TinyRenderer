@@ -5,7 +5,7 @@ use std::io::{BufReader, BufWriter};
 use std::io::{Read, Write};
 use std::io::{Seek, SeekFrom};
 
-use crate::modules::{Color, Point, Vertex};
+use crate::modules::{Color, Point, Vertex, Vertex2};
 
 // Using i32 because Point use i32
 pub struct Image {
@@ -15,8 +15,8 @@ pub struct Image {
 }
 
 /// Test if the point p is inside triangle v0 v1 v2
-fn inside_triangle(p: Point, v0: Point, v1: Point, v2: Point) -> bool {
-    inside_triangle_barycentric(Point::barycentric(p, v0, v1, v2))
+fn inside_triangle(p: Point, triangle: (Point, Point, Point)) -> bool {
+    inside_triangle_barycentric(Point::barycentric(p, triangle))
 }
 
 /// Test if the point is inside the triangle using the barycentric coordinates
@@ -85,16 +85,17 @@ impl Image {
 
     /// Draw the triangle defined by the points v0, v1, v2
     /// filled with color
-    pub fn triangle(&mut self, v0: Point, v1: Point, v2: Point, color: Color) {
-        let max_x = v0.x.max(v1.x).max(v2.x);
-        let max_y = v0.y.max(v1.y).max(v2.y);
-        let min_x = v0.x.min(v1.x).min(v2.x);
-        let min_y = v0.y.min(v1.y).min(v2.y);
+    pub fn triangle(&mut self, triangle: (Point, Point, Point), color: Color) {
+        let (p0, p1, p2) = triangle;
+        let max_x = p0.x.max(p1.x).max(p2.x);
+        let max_y = p0.y.max(p1.y).max(p2.y);
+        let min_x = p0.x.min(p1.x).min(p2.x);
+        let min_y = p0.y.min(p1.y).min(p2.y);
 
         for x in min_x..=max_x {
             for y in min_y..=max_y {
                 let p = Point { x, y };
-                if inside_triangle(p, v0, v1, v2) {
+                if inside_triangle(p, (p0, p1, p2)) {
                     self.set(p, color);
                 }
             }
@@ -110,11 +111,10 @@ impl Image {
     pub fn triangle_zbuffer(
         &mut self,
         zbuffer: &mut Vec<f64>,
-        v0: Vertex,
-        v1: Vertex,
-        v2: Vertex,
+        triangle: (Vertex, Vertex, Vertex),
         color: Color,
     ) {
+        let (v0, v1, v2) = triangle;
         let w = self.width as usize;
         let index = |i: usize, j: usize| i * (w as usize) + j;
 
@@ -131,12 +131,64 @@ impl Image {
         for x in min_x..=max_x {
             for y in min_y..=max_y {
                 let p = Point { x, y };
-                let bary = Point::barycentric(p, p0, p1, p2);
+                let bary = Point::barycentric(p, (p0, p1, p2));
                 if inside_triangle_barycentric(bary) {
-                    let z = Vertex::lerp(bary, v0, v1, v2).unwrap().z;
+                    let z = Vertex::lerp(bary, (v0, v1, v2)).unwrap().z;
                     let i = index(y as usize, x as usize);
                     if i < zbuffer.len() as usize && zbuffer[i] < z {
                         zbuffer[i] = z;
+                        self.set(p, color);
+                    }
+                }
+            }
+        }
+    }
+
+    /// Draw a triangle defined by the vertexs v0, v1, v2
+    /// filled with the texture
+    /// using a zbuffer to prevent drawing a hidden triangle over other
+    ///
+    /// zbuffer length must be image.width * image.height
+    /// and be filled with f64::NEG_INFINITY
+    pub fn triangle_zbuffer_texture(
+        &mut self,
+        zbuffer: &mut Vec<f64>,
+        texture: &Image,
+        intensity: f64,
+        triangle: (Vertex, Vertex, Vertex),
+        texture_triangle: (Vertex2, Vertex2, Vertex2),
+    ) {
+        let (v0, v1, v2) = triangle;
+        let w = self.width as usize;
+        let index = |i: usize, j: usize| i * (w as usize) + j;
+
+        // Convert Vertex to points
+        let p0 = v0.to_point(self.width, self.height);
+        let p1 = v1.to_point(self.width, self.height);
+        let p2 = v2.to_point(self.width, self.height);
+
+        let max_x = (p0.x.max(p1.x).max(p2.x) + 10).min(self.width - 1);
+        let max_y = (p0.y.max(p1.y).max(p2.y) + 10).min(self.height - 1);
+        let min_x = (p0.x.min(p1.x).min(p2.x) - 10).max(0);
+        let min_y = (p0.y.min(p1.y).min(p2.y) - 10).max(0);
+
+        for x in min_x..=max_x {
+            for y in min_y..=max_y {
+                let p = Point { x, y };
+                let bary = Point::barycentric(p, (p0, p1, p2));
+                if inside_triangle_barycentric(bary) {
+                    let z = Vertex::lerp(bary, (v0, v1, v2)).unwrap().z;
+                    let i = index(y as usize, x as usize);
+                    if i < zbuffer.len() as usize && zbuffer[i] < z {
+                        zbuffer[i] = z;
+                        let color = texture
+                            .get(
+                                Vertex2::lerp(bary, texture_triangle)
+                                    .unwrap()
+                                    .to_point(texture.width, texture.height),
+                            )
+                            .unwrap()
+                            .gamma(intensity);
                         self.set(p, color);
                     }
                 }

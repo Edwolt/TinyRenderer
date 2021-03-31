@@ -1,17 +1,19 @@
 use std::ops::{Add, Mul, Sub};
 
-use super::Point;
+use super::{Point, Vertex};
 
 #[derive(Copy, Clone, Debug)]
-pub struct Vertex {
+pub struct Vertex2 {
     pub x: f64,
     pub y: f64,
-    pub z: f64,
 }
 
-impl Vertex {
-    /// Caculate barycentric coordinates of a vertex P using the triangle
-    pub fn barycentric(p: Vertex, triangle: (Vertex, Vertex, Vertex)) -> Option<(f64, f64, f64)> {
+impl Vertex2 {
+    /// Caculate barycentric coordinates of a vertex P using the triangle ΔABC
+    pub fn barycentric(
+        p: Vertex2,
+        triangle: (Vertex2, Vertex2, Vertex2),
+    ) -> Option<(f64, f64, f64)> {
         // Barycentric coordinates is the (α, β, 𝛾) where
         // P = α*A + β*B + 𝛾*C and α + β + 𝛾 = 1
 
@@ -47,8 +49,8 @@ impl Vertex {
     /// Linear interpolation
     pub fn lerp(
         barycentric: Option<(f64, f64, f64)>,
-        triangle: (Vertex, Vertex, Vertex),
-    ) -> Option<Vertex> {
+        triangle: (Vertex2, Vertex2, Vertex2),
+    ) -> Option<Vertex2> {
         let (a, b, c) = triangle;
         match barycentric {
             Some((alpha, beta, gamma)) => Some(a * alpha + b * beta + c * gamma),
@@ -57,41 +59,21 @@ impl Vertex {
     }
 
     pub fn norm(self) -> f64 {
-        let Vertex { x, y, z } = self;
-        (x * x + y * y + z * z).sqrt()
+        let Vertex2 { x, y } = self;
+        (x * x + y * y).sqrt()
     }
 
-    pub fn normalize(self) -> Vertex {
-        if self.x.abs() < f64::EPSILON && self.y.abs() < f64::EPSILON && self.z.abs() < f64::EPSILON
-        {
-            return Vertex {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            };
+    pub fn normalize(self) -> Vertex2 {
+        if self.x.abs() < f64::EPSILON && self.y.abs() < f64::EPSILON {
+            Vertex2 { x: 0.0, y: 0.0 }
+        } else {
+            self * (1.0 / self.norm())
         }
-        self * (1.0 / self.norm())
     }
 
-    /// Cross product
-    pub fn cross(self, other: Vertex) -> Vertex {
-        let Vertex {
-            x: x0,
-            y: y0,
-            z: z0,
-        } = self;
-
-        let Vertex {
-            x: x1,
-            y: y1,
-            z: z1,
-        } = other;
-
-        Vertex {
-            x: y0 * z1 - y1 * z0,
-            y: z0 * x1 - x0 * z1,
-            z: x0 * y1 - y0 * x1,
-        }
+    /// Cross product norm with z = 0
+    pub fn cross(self, other: Vertex2) -> f64 {
+        self.x * other.y - self.y * other.x
     }
 
     pub fn to_point(self, width: i32, height: i32) -> Point {
@@ -104,44 +86,41 @@ impl Vertex {
     }
 }
 
-impl Add for Vertex {
-    type Output = Vertex;
-    fn add(self, other: Vertex) -> Vertex {
-        Vertex {
+impl Add for Vertex2 {
+    type Output = Vertex2;
+    fn add(self, other: Vertex2) -> Vertex2 {
+        Vertex2 {
             x: self.x + other.x,
             y: self.y + other.y,
-            z: self.z + other.z,
         }
     }
 }
 
-impl Sub for Vertex {
-    type Output = Vertex;
-    fn sub(self, other: Vertex) -> Vertex {
-        Vertex {
+impl Sub for Vertex2 {
+    type Output = Vertex2;
+    fn sub(self, other: Vertex2) -> Vertex2 {
+        Vertex2 {
             x: self.x - other.x,
             y: self.y - other.y,
-            z: self.z - other.z,
         }
     }
 }
 
 /// Scalar product
-impl Mul for Vertex {
+impl Mul for Vertex2 {
     type Output = f64;
-    fn mul(self, other: Vertex) -> f64 {
-        self.x * other.x + self.y * other.y + self.z * other.z
+    fn mul(self, other: Vertex2) -> f64 {
+        self.x * other.x + self.y * other.y
     }
 }
 
 /// Product with a scalar
-impl Mul<f64> for Vertex {
-    type Output = Vertex;
-    fn mul(self, other: f64) -> Vertex {
-        Vertex {
+impl Mul<f64> for Vertex2 {
+    type Output = Vertex2;
+    fn mul(self, other: f64) -> Vertex2 {
+        Vertex2 {
             x: self.x * other,
             y: self.y * other,
-            z: self.z * other,
         }
     }
 }

@@ -30,22 +30,45 @@ impl Model {
         }
     }
 
-    pub fn render(&self, image: &mut Image, light: Vertex, color: Color) {
+    /// Render a image using a color
+    pub fn render_color(&self, image: &mut Image, light: Vertex, color: Color) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
         for face in self.faces() {
             let (u, _) = face[0];
             let (v, _) = face[1];
             let (w, _) = face[2];
+
+            let normal = (w - u).cross(v - u).normalize();
+            let intensity = normal * light;
+            let draw_color = color.gamma(intensity);
+
+            image.triangle_zbuffer(&mut zbuffer, (u, v, w), draw_color);
+        }
+    }
+
+    /// Rendewr a image using a diffuse texture image
+    pub fn render_texture(&self, image: &mut Image, texture: &Image, light: Vertex) {
+        let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
+
+        for face in self.faces() {
+            let (u, ut) = face[0];
+            let (v, vt) = face[1];
+            let (w, wt) = face[2];
+            let ut = ut.expect("Render Texture: No texture vertex");
+            let vt = vt.expect("Render Texture: No texture vertex");
+            let wt = wt.expect("Render Texture: No texture vertex");
+
             let normal = (w - u).cross(v - u).normalize();
             let intensity = normal * light;
 
-            if intensity > 0.0 {
-                // if intensity < 0 it's behind the scene
-                image.triangle_zbuffer(&mut zbuffer, u, v, w, color * intensity);
-            } else {
-                image.triangle_zbuffer(&mut zbuffer, u, v, w, Color::hex(b"#000"));
-            }
+            image.triangle_zbuffer_texture(
+                &mut zbuffer,
+                &texture,
+                intensity,
+                (u, v, w),
+                (ut, vt, wt),
+            );
         }
     }
 
@@ -119,7 +142,9 @@ impl Model {
                                 Some(string
                                     .trim()
                                     .parse::<isize>()
-                                    .expect("Invalid Wavefront Obj: The Face's texture vertex index must be a integer")
+                                    .expect(
+                                        "Invalid Wavefront Obj: The Face's texture vertex index must be a integer"
+                                    )
                                 )
                             }
                             None => None,
@@ -168,15 +193,18 @@ impl<'a> Iterator for FaceIterator<'a> {
             } as usize;
             let vertex = self.model.vertices[vertex_index];
 
-            let texture = match texture_index {
+            let texture_index = match texture_index {
                 Some(texture_index) => {
-                    let texture_index = if texture_index >= 0 {
-                        texture_index - 1
+                    if texture_index >= 0 {
+                        Some(texture_index - 1)
                     } else {
-                        model.textures.len() as isize + texture_index
-                    } as usize;
-                    Some(model.textures[texture_index])
+                        Some(model.textures.len() as isize + texture_index)
+                    }
                 }
+                None => None,
+            };
+            let texture = match texture_index {
+                Some(texture_index) => Some(model.textures[texture_index as usize]),
                 None => None,
             };
 
