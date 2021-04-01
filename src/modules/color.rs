@@ -53,7 +53,7 @@ impl Color {
     }
 
     /// Return a color with the intesity changed
-    pub fn gamma(&self, intensity: f64) -> Color {
+    pub fn light(&self, intensity: f64) -> Color {
         if intensity > 0.0 {
             Color {
                 r: ((self.r as f64) * intensity) as u8,

@@ -31,7 +31,7 @@ impl Model {
     }
 
     /// Render a image using a color
-    pub fn render_color(&self, image: &mut Image, light: Vertex, color: Color) {
+    pub fn render_color(&self, image: &mut Image, color: Color, light: Vertex) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
         for face in self.faces() {
@@ -41,7 +41,7 @@ impl Model {
 
             let normal = (w - u).cross(v - u).normalize();
             let intensity = normal * light;
-            let draw_color = color.gamma(intensity);
+            let draw_color = color.light(intensity);
 
             image.triangle_zbuffer(&mut zbuffer, (u, v, w), draw_color);
         }
@@ -87,6 +87,7 @@ impl Model {
 
         for line in lines {
             let mut data = line.split(" ").filter(|string| !string.is_empty());
+
             match data.next() {
                 Some("v") => model.vertices.push(Vertex {
                     x: data
