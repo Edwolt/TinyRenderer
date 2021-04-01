@@ -77,8 +77,9 @@ impl Vertex2 {
     }
 
     pub fn to_point(self, width: i32, height: i32) -> Point {
-        let x = (self.x + 1.0) * ((width - 1) as f64) / 2.0;
-        let y = (self.y + 1.0) * ((height - 1) as f64) / 2.0;
+        // Vertex2 vary from 0 to 1
+        let x = self.x * ((width - 1) as f64);
+        let y = self.y * ((height - 1) as f64);
         Point {
             x: x as i32,
             y: y as i32,

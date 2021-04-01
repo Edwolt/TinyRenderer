@@ -181,14 +181,11 @@ impl Image {
                     let i = index(y as usize, x as usize);
                     if i < zbuffer.len() as usize && zbuffer[i] < z {
                         zbuffer[i] = z;
-                        let color = texture
-                            .get(
-                                Vertex2::lerp(bary, texture_triangle)
-                                    .unwrap()
-                                    .to_point(texture.width, texture.height),
-                            )
+                        let t = Vertex2::lerp(bary, texture_triangle)
                             .unwrap()
-                            .gamma(intensity);
+                            .to_point(texture.width, texture.height);
+
+                        let color = texture.get(t).unwrap().gamma(intensity);
                         self.set(p, color);
                     }
                 }
