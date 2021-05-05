@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::Read;
 
 use crate::image::Image;
-use crate::modules::{Color, Vertex, Vertex2};
+use crate::modules::{Color, Matrix, Vertex, Vertex2};
 
 type Element = (isize, Option<isize>);
 pub struct Model {
@@ -12,7 +12,7 @@ pub struct Model {
 }
 
 impl Model {
-    /// Wireframe Render
+    /// Wireframe Render in orthographic projection
     pub fn wireframe(&self, image: &mut Image, color: Color) {
         for face in self.faces() {
             let mut v = match face.last() {
@@ -30,7 +30,8 @@ impl Model {
         }
     }
 
-    /// Render a image using a color
+    /// Render a image in orthographic projection
+    /// using a color
     pub fn render_color(&self, image: &mut Image, color: Color, light: Vertex) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
@@ -47,7 +48,8 @@ impl Model {
         }
     }
 
-    /// Rendewr a image using a diffuse texture image
+    /// Render a image in orthographic projection
+    /// using a diffuse texture image
     pub fn render_texture(&self, image: &mut Image, texture: &Image, light: Vertex) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
@@ -55,6 +57,7 @@ impl Model {
             let (u, ut) = face[0];
             let (v, vt) = face[1];
             let (w, wt) = face[2];
+
             let ut = ut.expect("Render Texture: No texture vertex");
             let vt = vt.expect("Render Texture: No texture vertex");
             let wt = wt.expect("Render Texture: No texture vertex");
@@ -67,6 +70,68 @@ impl Model {
                 &texture,
                 intensity,
                 (u, v, w),
+                (ut, vt, wt),
+            );
+        }
+    }
+
+    /// Render a image in pespective projection
+    /// using a diffuse texture image
+    pub fn render_perspective(
+        &self,
+        image: &mut Image,
+        camera_z: f64,
+        texture: &Image,
+        light: Vertex,
+    ) {
+        fn vertex_to_matrix(Vertex { x, y, z }: Vertex) -> Matrix {
+            mat![4, 1 =>
+                x;
+                y;
+                z;
+                1.0;
+            ]
+        }
+
+        fn matrix_to_vertex(matrix: Matrix) -> Vertex {
+            let w = matrix.get(3, 0);
+            Vertex {
+                x: matrix.get(0, 0) / w,
+                y: matrix.get(1, 0) / w,
+                z: matrix.get(2, 0) / w,
+            }
+        }
+
+        let transform = mat![4, 4 =>
+            1.0, 0.0, 0.0,           0.0;
+            0.0, 1.0, 0.0,           0.0;
+            0.0, 0.0, 1.0,           0.0;
+            0.0, 0.0, -1.0/camera_z, 1.0;
+        ];
+
+        let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
+
+        for face in self.faces() {
+            let (u, ut) = face[0];
+            let (v, vt) = face[1];
+            let (w, wt) = face[2];
+
+            let ut = ut.expect("Render Texture: No texture vertex");
+            let vt = vt.expect("Render Texture: No texture vertex");
+            let wt = wt.expect("Render Texture: No texture vertex");
+
+            let up = matrix_to_vertex(&transform * &vertex_to_matrix(u));
+            let vp = matrix_to_vertex(&transform * &vertex_to_matrix(v));
+            let wp = matrix_to_vertex(&transform * &vertex_to_matrix(w));
+
+            let normal = (w - u).cross(v - u).normalize();
+            let intensity = normal * light;
+
+            image.triangle_zbuffer_texture(
+                &mut zbuffer,
+                &texture,
+                intensity,
+                (up, vp, wp),
                 (ut, vt, wt),
             );
         }

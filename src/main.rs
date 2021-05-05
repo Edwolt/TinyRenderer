@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+#[macro_use]
 mod modules;
 use modules::{Color, Vertex};
 
@@ -18,39 +19,63 @@ fn main() {
         y: 0.0,
         z: -1.0,
     };
-    let mut wire = Image::new(width, height);
-    let mut image = Image::new(width, height);
-    let mut render_color = Image::new(width, height);
+
+    
+    println!("Opening model and texture\n");
     let texture = Image::load_tga("obj/african_head_diffuse.tga").expect("Can't load texture");
-
-    println!("Opening model");
     let model = Model::new("obj/african_head.obj").expect("Can't open model");
+    
+    {
+        let mut image = Image::new(width, height);
 
-    println!("Wireframe");
-    println!("> Rendering");
-    model.wireframe(&mut wire, Color::hex(b"#FFF"));
+        println!("Wireframe");
+        println!("> Rendering");
+        model.wireframe(&mut image, Color::hex(b"#FFF"));
 
-    println!("> Saving");
-    wire.save_tga("wireframe.tga", true)
-        .expect("Can't save the image");
+        println!("> Saving");
+        image
+            .save_tga("wireframe.tga", true)
+            .expect("Can't save the image");
+    }
+    println!();
+    {
+        let mut image = Image::new(width, height);
+        println!("Render Color");
+        println!("> Rendering");
+        model.render_color(&mut image, Color::hex(b"#FFF"), light_source);
 
-    println!("Render Color");
-    println!("> Rendering");
-    model.render_color(&mut render_color, Color::hex(b"#FFF"), light_source);
+        println!("> Saving");
+        image
+            .save_tga("color.tga", true)
+            .expect("Can't save the image");
+    }
+    println!();
+    {
+        let mut image = Image::new(width, height);
 
-    println!("> Saving");
-    render_color
-        .save_tga("color.tga", true)
-        .expect("Can't save the image");
+        println!("Render Texture");
+        println!("> Rendering");
+        model.render_texture(&mut image, &texture, light_source);
 
-    println!("Image");
-    println!("> Rendering");
-    model.render_texture(&mut image, &texture, light_source);
+        println!("> Saving");
+        image
+            .save_tga("texture.tga", true)
+            .expect("Can't save the image");
+    }
+    println!();
+    {
+        let mut image = Image::new(width, height);
 
-    println!("> Saving");
-    image
-        .save_tga("image.tga", true)
-        .expect("Can't save the image");
+        println!("Perspective");
+        println!("> Rendering");
+        model.render_perspective(&mut image, 3.0, &texture, light_source);
 
-    println!("Image created with success");
+        println!("> Saving");
+        image
+            .save_tga("perspective.tga", true)
+            .expect("Can't save the image");
+    }
+    println!();
+
+    println!("Images created with success");
 }
