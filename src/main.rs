@@ -10,18 +10,43 @@ use image::Image;
 mod model;
 use model::Model;
 
+
+// Const 
+const MODEL: &str = "african_head";
+
+const WIDTH: i32 = 1024;
+const HEIGHT: i32 = 1024;
+
+const LIGHT_SOURCE: Vertex3 = Vertex3 {
+    x: 0.3,
+    y: 0.0,
+    z: -1.0,
+};
+
+const CAMERA_Z: f64 = 3.0;
+
+/// A function to reduce repeated code
+///
+/// Save the rendered image to a file and print some things
+fn wrap_render<F>(title: &str, path: &str, render: F)
+where
+    F: FnOnce(&mut Image),
+{
+    let mut image = Image::new(WIDTH, HEIGHT);
+
+    println!("{}", title);
+
+    println!("> Rendering");
+    render(&mut image);
+
+    println!("> Saving");
+    image.save_tga(path, true).expect("Can't save the image");
+
+    println!();
+}
+
 fn main() {
-    const MODEL: &str = "african_head";
     // const MODEL: &str = "diablo3_pose";
-
-    let width = 1024;
-    let height = 1024;
-
-    let light_source = Vertex3 {
-        x: 0.3,
-        y: 0.0,
-        z: -1.0,
-    };
 
     println!("Opening model and texture\n");
 
@@ -34,57 +59,21 @@ fn main() {
         Model::new(path.as_str()).expect("Can't open model")
     };
 
-    {
-        let mut image = Image::new(width, height);
+    wrap_render("Wireframe", "wireframe.tga", |image| {
+        model.wireframe(image, Color::hex(b"#FFF"))
+    });
 
-        println!("Wireframe");
-        println!("> Rendering");
-        model.wireframe(&mut image, Color::hex(b"#FFF"));
+    wrap_render("Render Color", "color.tga", |image| {
+        model.render_color(image, Color::hex(b"#FFF"), LIGHT_SOURCE)
+    });
 
-        println!("> Saving");
-        image
-            .save_tga("wireframe.tga", true)
-            .expect("Can't save the image");
-    }
-    println!();
-    {
-        let mut image = Image::new(width, height);
-        println!("Render Color");
-        println!("> Rendering");
-        model.render_color(&mut image, Color::hex(b"#FFF"), light_source);
+    wrap_render("Render Texture", "texture.tga", |image| {
+        model.render_texture(image, &texture, LIGHT_SOURCE)
+    });
 
-        println!("> Saving");
-        image
-            .save_tga("color.tga", true)
-            .expect("Can't save the image");
-    }
-    println!();
-    {
-        let mut image = Image::new(width, height);
-
-        println!("Render Texture");
-        println!("> Rendering");
-        model.render_texture(&mut image, &texture, light_source);
-
-        println!("> Saving");
-        image
-            .save_tga("texture.tga", true)
-            .expect("Can't save the image");
-    }
-    println!();
-    {
-        let mut image = Image::new(width, height);
-
-        println!("Perspective");
-        println!("> Rendering");
-        model.render_perspective(&mut image, 3.0, &texture, light_source);
-
-        println!("> Saving");
-        image
-            .save_tga("perspective.tga", true)
-            .expect("Can't save the image");
-    }
-    println!();
+    wrap_render("Perspective", "perspective.tga", |image| {
+        model.render_perspective(image, CAMERA_Z, &texture, LIGHT_SOURCE);
+    });
 
     println!("Images created with success");
 }

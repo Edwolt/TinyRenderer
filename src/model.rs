@@ -175,59 +175,55 @@ impl Model {
             let mut data = line.split(" ").filter(|string| !string.is_empty());
 
             match data.next() {
-                Some("v") => model.vertices.push(Vertex3 {
-                    x: data
-                        .next()
-                        .expect("Invalid Wavefront Obj: Vertex doesn't have x coordinate")
+                Some("v") => model.vertices.push({
+                    /// A function to reduce repeated code
+                    fn v_parse(data: Option<&str>) -> f64 {
+                        data.expect(
+                            "Invalid Wavefront Obj: Vertex have less than three coordinates",
+                        )
                         .trim()
                         .parse::<f64>()
-                        .expect("Invalid Wavefront Obj: Vertex x coordinate isn't a float"),
-                    y: data
-                        .next()
-                        .expect("Invalid Wavefront Obj: Vertex doesn't have y coordinate")
-                        .trim()
-                        .parse::<f64>()
-                        .expect("Invalid Wavefront Obj: Vertex y coordinate isn't float"),
-                    z: data
-                        .next()
-                        .expect("Invalid Wavefront Obj: Vertex doesn't have z coordinate")
-                        .trim()
-                        .parse::<f64>()
-                        .expect("Invalid Wavefront Obj: Vertex z coordinate isn't float"),
+                        .expect("Invalid Wavefront Obj: Vertex coordinate isn't a float")
+                    }
+
+                    Vertex3 {
+                        x: v_parse(data.next()),
+                        y: v_parse(data.next()),
+                        z: v_parse(data.next()),
+                    }
                 }),
-                Some("vt") => model.textures.push(Vertex2 {
-                    x: data
-                        .next()
-                        .expect("Invalid Wavefront Obj: Texture Vertex doesn't have x coordinate")
+                Some("vt") => model.textures.push({
+                    /// A function to reduce repeated code
+                    fn vt_parse(data: Option<&str>) -> f64 {
+                        data.expect(
+                            "Invalid Wavefront Obj: Texture Vertex have less than two coordinates",
+                        )
                         .trim()
                         .parse::<f64>()
-                        .expect("Invalid Wavefront Obj: Texture Vertex x coordinate isn't a float"),
-                    y: data
-                        .next()
-                        .expect("Invalid Wavefront Obj: Texture Vertex doesn't have y coordinate")
-                        .trim()
-                        .parse::<f64>()
-                        .expect("Invalid Wavefront Obj: Texture Vertex y coordinate isn't a float"),
+                        .expect("Invalid Wavefront Obj: Texture Vertex coordinate isn't a float")
+                    }
+
+                    Vertex2 {
+                        x: vt_parse(data.next()),
+                        y: vt_parse(data.next()),
+                    }
                 }),
-                Some("vn") => model.normal.push(Vertex3 {
-                    x: data
-                        .next()
-                        .expect("Invalid Wavefront Obj: Normal doesn't have x coordinate")
+                Some("vn") => model.normal.push({
+                    /// A function to reduce repeated code
+                    fn vn_parse(data: Option<&str>) -> f64 {
+                        data.expect(
+                            "Invalid Wavefront Obj: Normal have less than three coordinates",
+                        )
                         .trim()
                         .parse::<f64>()
-                        .expect("Invalid Wavefront Obj: Normal x coordinate isn't a float"),
-                    y: data
-                        .next()
-                        .expect("Invalid Wavefront Obj: Normal doesn't have y coordinate")
-                        .trim()
-                        .parse::<f64>()
-                        .expect("Invalid Wavefront Obj: Normal y coordinate isn't a float"),
-                    z: data
-                        .next()
-                        .expect("Invalid Wavefront Obj: Normal doesn't have z coordinate")
-                        .trim()
-                        .parse::<f64>()
-                        .expect("Invalid Wavefront Obj: Normal z coordinate isn't a float"),
+                        .expect("Invalid Wavefront Obj: Normal coordinate isn't a float")
+                    }
+
+                    Vertex3 {
+                        x: vn_parse(data.next()),
+                        y: vn_parse(data.next()),
+                        z: vn_parse(data.next()),
+                    }
                 }),
                 Some("f") => {
                     let mut face: Vec<Element> = Vec::new();
@@ -302,6 +298,17 @@ pub struct FaceIterator<'a> {
 impl<'a> Iterator for FaceIterator<'a> {
     type Item = Vec<(Vertex3, Option<Vertex2>, Vertex3)>;
     fn next(&mut self) -> Option<Self::Item> {
+        /// Convert a isize 1-based index into a usize 0-based index
+        ///
+        /// The input can be negative with -1 meaning the last, -2 meaning the last but one, ...
+        fn convert(index: isize, max: usize) -> usize {
+            if index >= 0 {
+                (index - 1) as usize
+            } else {
+                ((max as isize) + index) as usize
+            }
+        }
+
         if self.index >= self.model.faces.len() {
             return None;
         }
@@ -311,44 +318,27 @@ impl<'a> Iterator for FaceIterator<'a> {
         let mut result: Self::Item = Vec::new();
 
         for element in face {
-            // Vertex
             let &(vertex_index, texture_index, normal_index) = element;
-
-            let vertex_index = if vertex_index >= 0 {
-                vertex_index - 1
-            } else {
-                model.vertices.len() as isize + vertex_index
+            // Vertex
+            let vertex = {
+                let vertex_index = convert(vertex_index, model.vertices.len());
+                self.model.vertices[vertex_index]
             };
-            let vertex = self.model.vertices[vertex_index as usize];
 
             // Texture
-            let texture_index = match texture_index {
-                Some(texture_index) => {
-                    if texture_index >= 0 {
-                        Some(texture_index - 1)
-                    } else {
-                        Some(model.textures.len() as isize + texture_index)
-                    }
-                }
-                None => None,
-            };
             let texture = match texture_index {
-                Some(texture_index) => Some(model.textures[texture_index as usize]),
+                Some(texture_index) => {
+                    let texture_index = convert(texture_index, model.textures.len());
+                    Some(model.textures[texture_index])
+                }
                 None => None,
             };
 
             // Normal
-            let normal_index = match normal_index {
-                Some(normal_index) => {
-                    if normal_index >= 0 {
-                        normal_index - 1
-                    } else {
-                        model.textures.len() as isize + normal_index
-                    }
-                }
-                None => panic!("Normal not computed"),
+            let normal = {
+                let normal_index = convert(normal_index.unwrap(), model.normal.len());
+                model.normal[normal_index]
             };
-            let normal = model.normal[normal_index as usize];
 
             result.push((vertex, texture, normal));
         }
