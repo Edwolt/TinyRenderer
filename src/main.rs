@@ -11,6 +11,9 @@ mod model;
 use model::Model;
 
 fn main() {
+    const MODEL: &str = "african_head";
+    // const MODEL: &str = "diablo3_pose";
+
     let width = 1024;
     let height = 1024;
 
@@ -20,11 +23,17 @@ fn main() {
         z: -1.0,
     };
 
-    
     println!("Opening model and texture\n");
-    let texture = Image::load_tga("obj/african_head_diffuse.tga").expect("Can't load texture");
-    let model = Model::new("obj/african_head.obj").expect("Can't open model");
-    
+
+    let texture = {
+        let path = format!("obj/{0}/{0}_diffuse.tga", MODEL);
+        Image::load_tga(path.as_str()).expect("Can't load texture")
+    };
+    let model = {
+        let path = format!("obj/{0}/{0}.obj", MODEL);
+        Model::new(path.as_str()).expect("Can't open model")
+    };
+
     {
         let mut image = Image::new(width, height);
 
