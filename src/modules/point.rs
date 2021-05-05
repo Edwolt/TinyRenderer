@@ -1,6 +1,6 @@
 use std::ops::{Add, Mul, Sub};
 
-use super::Vertex;
+use super::Vertex3;
 
 // Using i32 instead of u32 make signed calculation simpler
 // For exmaple in the cross product
@@ -22,18 +22,18 @@ impl Point {
         let ac = c - a;
         let pa = a - p;
 
-        let vec_x = Vertex {
+        let vec_x = Vertex3 {
             x: ab.x as f64,
             y: ac.x as f64,
             z: pa.x as f64,
         };
-        let vec_y = Vertex {
+        let vec_y = Vertex3 {
             x: ab.y as f64,
             y: ac.y as f64,
             z: pa.y as f64,
         };
 
-        let Vertex { x: u, y: v, z } = vec_x.cross(vec_y);
+        let Vertex3 { x: u, y: v, z } = vec_x.cross(vec_y);
 
         // z can't be zero
         if z.abs() < f64::EPSILON {

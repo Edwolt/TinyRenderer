@@ -1,6 +1,6 @@
 use std::ops::{Add, Mul, Sub};
 
-use super::{Point, Vertex};
+use super::{Point, Vertex3};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Vertex2 {
@@ -23,18 +23,18 @@ impl Vertex2 {
         let ac = c - a;
         let pa = a - p;
 
-        let vec_x = Vertex {
+        let vec_x = Vertex3 {
             x: ab.x,
             y: ac.x,
             z: pa.x,
         };
-        let vec_y = Vertex {
+        let vec_y = Vertex3 {
             x: ab.y,
             y: ac.y,
             z: pa.y,
         };
 
-        let Vertex { x: u, y: v, z } = vec_x.cross(vec_y);
+        let Vertex3 { x: u, y: v, z } = vec_x.cross(vec_y);
 
         // z can't be zero
         if z.abs() < f64::EPSILON {

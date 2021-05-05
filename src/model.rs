@@ -2,11 +2,11 @@ use std::fs::File;
 use std::io::Read;
 
 use crate::image::Image;
-use crate::modules::{Color, Matrix, Vertex, Vertex2};
+use crate::modules::{Color, Matrix, Vertex2, Vertex3};
 
 type Element = (isize, Option<isize>);
 pub struct Model {
-    vertices: Vec<Vertex>,
+    vertices: Vec<Vertex3>,
     textures: Vec<Vertex2>,
     faces: Vec<Vec<Element>>,
 }
@@ -32,7 +32,7 @@ impl Model {
 
     /// Render a image in orthographic projection
     /// using a color
-    pub fn render_color(&self, image: &mut Image, color: Color, light: Vertex) {
+    pub fn render_color(&self, image: &mut Image, color: Color, light: Vertex3) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
         for face in self.faces() {
@@ -50,7 +50,7 @@ impl Model {
 
     /// Render a image in orthographic projection
     /// using a diffuse texture image
-    pub fn render_texture(&self, image: &mut Image, texture: &Image, light: Vertex) {
+    pub fn render_texture(&self, image: &mut Image, texture: &Image, light: Vertex3) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
         for face in self.faces() {
@@ -82,9 +82,9 @@ impl Model {
         image: &mut Image,
         camera_z: f64,
         texture: &Image,
-        light: Vertex,
+        light: Vertex3,
     ) {
-        fn vertex_to_matrix(Vertex { x, y, z }: Vertex) -> Matrix {
+        fn vertex3_to_matrix(Vertex3 { x, y, z }: Vertex3) -> Matrix {
             mat![4, 1 =>
                 x;
                 y;
@@ -93,9 +93,9 @@ impl Model {
             ]
         }
 
-        fn matrix_to_vertex(matrix: Matrix) -> Vertex {
+        fn matrix_to_vertex3(matrix: Matrix) -> Vertex3 {
             let w = matrix.get(3, 0);
-            Vertex {
+            Vertex3 {
                 x: matrix.get(0, 0) / w,
                 y: matrix.get(1, 0) / w,
                 z: matrix.get(2, 0) / w,
@@ -120,9 +120,9 @@ impl Model {
             let vt = vt.expect("Render Texture: No texture vertex");
             let wt = wt.expect("Render Texture: No texture vertex");
 
-            let up = matrix_to_vertex(&transform * &vertex_to_matrix(u));
-            let vp = matrix_to_vertex(&transform * &vertex_to_matrix(v));
-            let wp = matrix_to_vertex(&transform * &vertex_to_matrix(w));
+            let up = matrix_to_vertex3(&transform * &vertex3_to_matrix(u));
+            let vp = matrix_to_vertex3(&transform * &vertex3_to_matrix(v));
+            let wp = matrix_to_vertex3(&transform * &vertex3_to_matrix(w));
 
             let normal = (w - u).cross(v - u).normalize();
             let intensity = normal * light;
@@ -154,7 +154,7 @@ impl Model {
             let mut data = line.split(" ").filter(|string| !string.is_empty());
 
             match data.next() {
-                Some("v") => model.vertices.push(Vertex {
+                Some("v") => model.vertices.push(Vertex3 {
                     x: data
                         .next()
                         .expect("Invalid Wavefront Obj: Vertex must have x coordinate")
@@ -240,7 +240,7 @@ pub struct FaceIterator<'a> {
 }
 
 impl<'a> Iterator for FaceIterator<'a> {
-    type Item = Vec<(Vertex, Option<Vertex2>)>;
+    type Item = Vec<(Vertex3, Option<Vertex2>)>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.index >= self.model.faces.len() {
             return None;

@@ -2,7 +2,7 @@
 
 #[macro_use]
 mod modules;
-use modules::{Color, Vertex};
+use modules::{Color, Vertex3};
 
 mod image;
 use image::Image;
@@ -17,7 +17,7 @@ fn main() {
     let width = 1024;
     let height = 1024;
 
-    let light_source = Vertex {
+    let light_source = Vertex3 {
         x: 0.3,
         y: 0.0,
         z: -1.0,

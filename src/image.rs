@@ -5,7 +5,7 @@ use std::io::{BufReader, BufWriter};
 use std::io::{Read, Write};
 use std::io::{Seek, SeekFrom};
 
-use crate::modules::{Color, Point, Vertex, Vertex2};
+use crate::modules::{Color, Point, Vertex3, Vertex2};
 
 // Using i32 because Point use i32
 pub struct Image {
@@ -102,7 +102,7 @@ impl Image {
         }
     }
 
-    /// Draw a triangle defined by the vertexs v0, v1, v2
+    /// Draw a triangle defined by the vertices v0, v1, v2
     /// filled with color
     /// using a zbuffer to prevent drawing a hidden triangle over other
     ///
@@ -111,14 +111,14 @@ impl Image {
     pub fn triangle_zbuffer(
         &mut self,
         zbuffer: &mut Vec<f64>,
-        triangle: (Vertex, Vertex, Vertex),
+        triangle: (Vertex3, Vertex3, Vertex3),
         color: Color,
     ) {
         let (v0, v1, v2) = triangle;
         let w = self.width as usize;
         let index = |i: usize, j: usize| i * (w as usize) + j;
 
-        // Convert Vertex to points
+        // Convert vertices to points
         let p0 = v0.to_point(self.width, self.height);
         let p1 = v1.to_point(self.width, self.height);
         let p2 = v2.to_point(self.width, self.height);
@@ -133,7 +133,7 @@ impl Image {
                 let p = Point { x, y };
                 let bary = Point::barycentric(p, (p0, p1, p2));
                 if inside_triangle_barycentric(bary) {
-                    let z = Vertex::lerp(bary, (v0, v1, v2)).unwrap().z;
+                    let z = Vertex3::lerp(bary, (v0, v1, v2)).unwrap().z;
                     let i = index(y as usize, x as usize);
                     if i < zbuffer.len() as usize && zbuffer[i] < z {
                         zbuffer[i] = z;
@@ -144,7 +144,7 @@ impl Image {
         }
     }
 
-    /// Draw a triangle defined by the vertexs v0, v1, v2
+    /// Draw a triangle defined by the vertices v0, v1, v2
     /// filled with the texture
     /// using a zbuffer to prevent drawing a hidden triangle over other
     ///
@@ -155,14 +155,14 @@ impl Image {
         zbuffer: &mut Vec<f64>,
         texture: &Image,
         intensity: f64,
-        triangle: (Vertex, Vertex, Vertex),
+        triangle: (Vertex3, Vertex3, Vertex3),
         texture_triangle: (Vertex2, Vertex2, Vertex2),
     ) {
         let (v0, v1, v2) = triangle;
         let w = self.width as usize;
         let index = |i: usize, j: usize| i * (w as usize) + j;
 
-        // Convert Vertex to points
+        // Convert Vertex3 to points
         let p0 = v0.to_point(self.width, self.height);
         let p1 = v1.to_point(self.width, self.height);
         let p2 = v2.to_point(self.width, self.height);
@@ -177,7 +177,7 @@ impl Image {
                 let p = Point { x, y };
                 let bary = Point::barycentric(p, (p0, p1, p2));
                 if inside_triangle_barycentric(bary) {
-                    let z = Vertex::lerp(bary, (v0, v1, v2)).unwrap().z;
+                    let z = Vertex3::lerp(bary, (v0, v1, v2)).unwrap().z;
                     let i = index(y as usize, x as usize);
                     if i < zbuffer.len() as usize && zbuffer[i] < z {
                         zbuffer[i] = z;
