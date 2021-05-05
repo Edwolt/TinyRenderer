@@ -9,3 +9,6 @@ pub use vertex::Vertex;
 
 mod vertex2;
 pub use vertex2::Vertex2;
+
+mod matrix;
+pub use matrix::Matrix;
