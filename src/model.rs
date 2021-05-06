@@ -136,6 +136,31 @@ impl Model {
         }
     }
 
+    /// Render a image in orthographic projection
+    /// using Gouraud shading
+    pub fn render_gouraud_color(&self, image: &mut Image, color: Color, light: Vertex3) {
+        let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
+
+        for face in self.faces() {
+            let (u, _, un) = face[0];
+            let (v, _, vn) = face[1];
+            let (w, _, wn) = face[2];
+
+            image.triangle_zbuffer_gourad_color(
+                &mut zbuffer,
+                (u, v, w),
+                (un, vn, wn),
+                color,
+                light,
+            );
+        }
+    }
+
+    /// Render a image in pespective projection
+    /// using a diffuse texture
+    /// and Gouraud shading
+    pub fn render_gouraud_texture() {}
+
     /// Calculate the normals of all vertices that isn't calculated yet
     ///
     /// Actually this method calculate the normals of all vertex
@@ -269,6 +294,7 @@ impl Model {
                         y: vn_parse(data.next()),
                         z: vn_parse(data.next()),
                     }
+                    .normalize()
                 }),
                 Some("f") => {
                     let mut face: Vec<Element> = Vec::new();

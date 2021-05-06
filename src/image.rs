@@ -196,6 +196,51 @@ impl Image {
         }
     }
 
+    /// Draw a triangle defined by the vertices v0, v1, v2
+    /// filled with the diffuse texture
+    /// using a zbuffer to prevent drawing a hidden triangle over other
+    ///
+    /// zbuffer length must be image.width * image.height
+    /// and be filled with f64::NEG_INFINITY
+    pub fn triangle_zbuffer_gourad_color(
+        &mut self,
+        zbuffer: &mut Vec<f64>,
+        triangle: (Vertex3, Vertex3, Vertex3),
+        triangle_normals: (Vertex3, Vertex3, Vertex3),
+        color: Color,
+        light: Vertex3,
+    ) {
+        let (v0, v1, v2) = triangle;
+        let w = self.width as usize;
+        let index = |i: usize, j: usize| i * (w as usize) + j;
+
+        // Convert Vertex3 to points
+        let p0 = v0.to_point(self.width, self.height);
+        let p1 = v1.to_point(self.width, self.height);
+        let p2 = v2.to_point(self.width, self.height);
+
+        let max_x = p0.x.max(p1.x).max(p2.x).min(self.width - 1);
+        let max_y = p0.y.max(p1.y).max(p2.y).min(self.height - 1);
+        let min_x = p0.x.min(p1.x).min(p2.x).max(0);
+        let min_y = p0.y.min(p1.y).min(p2.y).max(0);
+
+        for x in min_x..=max_x {
+            for y in min_y..=max_y {
+                let p = Point { x, y };
+                let bary = Point::barycentric(p, (p0, p1, p2));
+                if inside_triangle_barycentric(bary) {
+                    let z = Vertex3::lerp(bary, (v0, v1, v2)).unwrap().z;
+                    let i = index(y as usize, x as usize);
+                    if i < zbuffer.len() as usize && zbuffer[i] < z {
+                        zbuffer[i] = z;
+                        let normal = Vertex3::lerp(bary, triangle_normals).unwrap();
+                        self.set(p, color.light(normal * light));
+                    }
+                }
+            }
+        }
+    }
+
     /// Draw a line from (x0, y0) to (x1, y1)
     pub fn line(
         &mut self,

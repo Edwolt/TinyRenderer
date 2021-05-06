@@ -11,6 +11,7 @@ use model::Model;
 
 // const MODEL: &str = "diablo3_pose";
 const MODEL: &str = "african_head";
+// const MODEL: &str = "african_head_novn";
 
 const WIDTH: i32 = 1024;
 const HEIGHT: i32 = 1024;
@@ -70,6 +71,10 @@ fn main() {
 
     wrap_render("Perspective", "perspective.tga", |image| {
         model.render_perspective(image, CAMERA_Z, LIGHT_SOURCE);
+    });
+
+    wrap_render("Gouraud", "gouraud.tga", |image| {
+        model.render_gouraud_color(image, Color::hex(b"#FFF"), LIGHT_SOURCE);
     });
 
     println!("Images created with success");
