@@ -78,6 +78,10 @@ impl Vertex3 {
         self / self.norm()
     }
 
+    pub fn normal(u: Vertex3, v: Vertex3, w: Vertex3) -> Vertex3 {
+        (v - u).cross(w - u).normalize()
+    }
+
     /// Cross product
     pub fn cross(self, other: Vertex3) -> Vertex3 {
         let Vertex3 {

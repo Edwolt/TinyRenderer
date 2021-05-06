@@ -53,7 +53,7 @@ impl Model {
             let (v, _, _) = face[1];
             let (w, _, _) = face[2];
 
-            let normal = (w - u).cross(v - u).normalize();
+            let normal = Vertex3::normal(u, v, w);
             let intensity = normal * light;
             let draw_color = color.light(intensity);
 
@@ -80,7 +80,7 @@ impl Model {
             let vt = vt.expect("Model have no texture vertex");
             let wt = wt.expect("Model have no texture vertex");
 
-            let normal = (w - u).cross(v - u).normalize();
+            let normal = Vertex3::normal(u, v, w);
             let intensity = normal * light;
 
             image.triangle_zbuffer_texture(
@@ -123,7 +123,7 @@ impl Model {
             let vp = (&transform * &v.to_matrix()).to_vertex3();
             let wp = (&transform * &w.to_matrix()).to_vertex3();
 
-            let normal = (w - u).cross(v - u).normalize();
+            let normal = Vertex3::normal(u, v, w);
             let intensity = normal * light;
 
             image.triangle_zbuffer_texture(
@@ -188,7 +188,7 @@ impl Model {
             let v = self.vertices[convert_index(v_index, self.vertices.len())];
             let w = self.vertices[convert_index(w_index, self.vertices.len())];
 
-            let normal = (w - u).cross(v - u).normalize();
+            let normal = Vertex3::normal(u, v, w);
 
             for i in 0..vec.len() {
                 let (vi, vti, vni) = vec[i];

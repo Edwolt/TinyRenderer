@@ -16,10 +16,15 @@ const MODEL: &str = "african_head";
 const WIDTH: i32 = 1024;
 const HEIGHT: i32 = 1024;
 
+// const LIGHT_SOURCE: Vertex3 = Vertex3 {
+//     x: 1.0,
+//     y: -1.0,
+//     z: 1.0,
+// }.normalize();
 const LIGHT_SOURCE: Vertex3 = Vertex3 {
-    x: 0.3,
-    y: 0.0,
-    z: -1.0,
+    x: 0.5773502691896258,
+    y: -0.5773502691896258,
+    z: 0.5773502691896258,
 };
 
 const CAMERA_Z: f64 = 3.0;
