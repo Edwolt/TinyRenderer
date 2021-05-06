@@ -78,8 +78,12 @@ fn main() {
         model.render_perspective(image, CAMERA_Z, LIGHT_SOURCE);
     });
 
-    wrap_render("Gouraud", "gouraud.tga", |image| {
+    wrap_render("Gouraud Color", "gouraud_color.tga", |image| {
         model.render_gouraud_color(image, Color::hex(b"#FFF"), LIGHT_SOURCE);
+    });
+
+    wrap_render("Gouraud", "gouraud.tga", |image| {
+        model.render_gouraud(image, CAMERA_Z, LIGHT_SOURCE);
     });
 
     println!("Images created with success");

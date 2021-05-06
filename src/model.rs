@@ -45,7 +45,7 @@ impl Model {
 
     /// Render a image in orthographic projection
     /// using a color
-    pub fn render_color(&self, image: &mut Image, color: Color, light: Vector3) {
+    pub fn render_color(&self, image: &mut Image, color: Color, light_source: Vector3) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
         for face in self.faces() {
@@ -54,7 +54,7 @@ impl Model {
             let (w, _, _) = face[2];
 
             let normal = Vector3::normal(u, v, w);
-            let intensity = normal * light;
+            let intensity = normal * light_source;
             let draw_color = color.light(intensity);
 
             image.triangle_zbuffer(&mut zbuffer, (u, v, w), draw_color);
@@ -63,7 +63,7 @@ impl Model {
 
     /// Render a image in orthographic projection
     /// using a diffuse texture image
-    pub fn render_texture(&self, image: &mut Image, light: Vector3) {
+    pub fn render_texture(&self, image: &mut Image, light_source: Vector3) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
         for face in self.faces() {
@@ -81,7 +81,7 @@ impl Model {
             let wt = wt.expect("Model have no texture vertex");
 
             let normal = Vector3::normal(u, v, w);
-            let intensity = normal * light;
+            let intensity = normal * light_source;
 
             image.triangle_zbuffer_texture(
                 &mut zbuffer,
@@ -95,7 +95,7 @@ impl Model {
 
     /// Render a image in pespective projection
     /// using a diffuse texture image
-    pub fn render_perspective(&self, image: &mut Image, camera_z: f64, light: Vector3) {
+    pub fn render_perspective(&self, image: &mut Image, camera_z: f64, light_source: Vector3) {
         let transform = mat![4, 4 =>
             1.0, 0.0, 0.0,           0.0;
             0.0, 1.0, 0.0,           0.0;
@@ -115,21 +115,21 @@ impl Model {
             let (v, vt, _) = face[1];
             let (w, wt, _) = face[2];
 
+            let normal = Vector3::normal(u, v, w);
+            let intensity = normal * light_source;
+
+            let u = (&transform * &u.to_matrix()).to_vertex3();
+            let v = (&transform * &v.to_matrix()).to_vertex3();
+            let w = (&transform * &w.to_matrix()).to_vertex3();
+
             let ut = ut.expect("Model have no texture vertex");
             let vt = vt.expect("Model have no texture vertex");
             let wt = wt.expect("Model have no texture vertex");
 
-            let up = (&transform * &u.to_matrix()).to_vertex3();
-            let vp = (&transform * &v.to_matrix()).to_vertex3();
-            let wp = (&transform * &w.to_matrix()).to_vertex3();
-
-            let normal = Vector3::normal(u, v, w);
-            let intensity = normal * light;
-
             image.triangle_zbuffer_texture(
                 &mut zbuffer,
                 &diffuse,
-                (up, vp, wp),
+                (u, v, w),
                 (ut, vt, wt),
                 intensity,
             );
@@ -138,7 +138,7 @@ impl Model {
 
     /// Render a image in orthographic projection
     /// using Gouraud shading
-    pub fn render_gouraud_color(&self, image: &mut Image, color: Color, light: Vector3) {
+    pub fn render_gouraud_color(&self, image: &mut Image, color: Color, light_source: Vector3) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
         for face in self.faces() {
@@ -151,7 +151,7 @@ impl Model {
                 (u, v, w),
                 (un, vn, wn),
                 color,
-                light,
+                light_source,
             );
         }
     }
@@ -159,7 +159,44 @@ impl Model {
     /// Render a image in pespective projection
     /// using a diffuse texture
     /// and Gouraud shading
-    pub fn render_gouraud_texture() {}
+    pub fn render_gouraud(&self, image: &mut Image, camera_z: f64, light_source: Vector3) {
+        let transform = mat![4, 4 =>
+            1.0, 0.0, 0.0,           0.0;
+            0.0, 1.0, 0.0,           0.0;
+            0.0, 0.0, 1.0,           0.0;
+            0.0, 0.0, -1.0/camera_z, 1.0;
+        ];
+
+        let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
+
+        for face in self.faces() {
+            let diffuse = match &self.diffuse {
+                Some(image) => image,
+                None => panic!("Model have no diffuse texture image"),
+            };
+
+            let (u, ut, un) = face[0];
+            let (v, vt, vn) = face[1];
+            let (w, wt, wn) = face[2];
+
+            let u = (&transform * &u.to_matrix()).to_vertex3();
+            let v = (&transform * &v.to_matrix()).to_vertex3();
+            let w = (&transform * &w.to_matrix()).to_vertex3();
+
+            let ut = ut.expect("Model have no texture vertex");
+            let vt = vt.expect("Model have no texture vertex");
+            let wt = wt.expect("Model have no texture vertex");
+
+            image.triangle_zbuffer_gourad_texture(
+                &mut zbuffer,
+                &diffuse,
+                (u, v, w),
+                (ut, vt, wt),
+                (un, vn, wn),
+                light_source,
+            );
+        }
+    }
 
     /// Calculate the normals of all vertices that isn't calculated yet
     ///
