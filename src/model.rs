@@ -76,19 +76,55 @@ impl Model {
         }
     }
 
+    /// Calculate the normal of all vertices that wasn't calculated
     fn compute_normal(&mut self) {
-        // TODO
-        self.normal.push(Vertex3 {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-        });
+        // Sum of the normal normals and count of normal of all vertex
+        let mut average: Vec<(Vertex3, usize)> = vec![
+            (
+                Vertex3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0
+                },
+                0
+            );
+            self.vertices.len()
+        ];
+
+        for vec in &mut self.faces {
+            let (u_index, _, _) = vec[0];
+            let (v_index, _, _) = vec[1];
+            let (w_index, _, _) = vec[2];
+
+            let u = self.vertices[convert_index(u_index, self.vertices.len())];
+            let v = self.vertices[convert_index(v_index, self.vertices.len())];
+            let w = self.vertices[convert_index(w_index, self.vertices.len())];
+
+            let normal = (w - u).cross(v - u).normalize();
+
+            for i in 0..vec.len() {
+                let (vi, vti, vni) = vec[i];
+                let index = convert_index(vi, self.vertices.len());
+
+                let (sum, count) = average[index];
+                average[index] = ((sum + normal).normalize(), count + 1);
+                if let Some(vni) = vni {
+                    let vni = (convert_index(vni, self.normal.len()) + 1) as isize;
+                    vec[i] = (vi, vti, Some(vni));
+                }
+            }
+        }
 
         for vec in &mut self.faces {
             for i in 0..vec.len() {
-                let (v, vt, vn) = vec[i];
-                if vn.is_none() {
-                    vec[i] = (v, vt, Some(self.normal.len() as isize));
+                let (vi, vti, vni) = vec[i];
+                if vni.is_none() {
+                    let v_index = convert_index(vi, self.vertices.len());
+                    let (sum, count) = average[v_index];
+                    self.normal.push(sum / (count as f64));
+
+                    let vni = Some(self.normal.len() as isize);
+                    vec[i] = (vi, vti, vni);
                 }
             }
         }
@@ -298,17 +334,6 @@ pub struct FaceIterator<'a> {
 impl<'a> Iterator for FaceIterator<'a> {
     type Item = Vec<(Vertex3, Option<Vertex2>, Vertex3)>;
     fn next(&mut self) -> Option<Self::Item> {
-        /// Convert a isize 1-based index into a usize 0-based index
-        ///
-        /// The input can be negative with -1 meaning the last, -2 meaning the last but one, ...
-        fn convert(index: isize, max: usize) -> usize {
-            if index >= 0 {
-                (index - 1) as usize
-            } else {
-                ((max as isize) + index) as usize
-            }
-        }
-
         if self.index >= self.model.faces.len() {
             return None;
         }
@@ -318,32 +343,30 @@ impl<'a> Iterator for FaceIterator<'a> {
         let mut result: Self::Item = Vec::new();
 
         for element in face {
-            let &(vertex_index, texture_index, normal_index) = element;
-            // Vertex
-            let vertex = {
-                let vertex_index = convert(vertex_index, model.vertices.len());
-                self.model.vertices[vertex_index]
-            };
+            let &(vi, vti, vni) = element;
 
-            // Texture
-            let texture = match texture_index {
-                Some(texture_index) => {
-                    let texture_index = convert(texture_index, model.textures.len());
-                    Some(model.textures[texture_index])
-                }
+            let v = self.model.vertices[convert_index(vi, model.vertices.len())];
+            let vt = match vti {
+                Some(vti) => Some(model.textures[convert_index(vti, model.textures.len())]),
                 None => None,
             };
+            let vn = model.normal[convert_index(vni.unwrap(), model.normal.len())];
 
-            // Normal
-            let normal = {
-                let normal_index = convert(normal_index.unwrap(), model.normal.len());
-                model.normal[normal_index]
-            };
-
-            result.push((vertex, texture, normal));
+            result.push((v, vt, vn));
         }
 
         self.index += 1;
         Some(result)
+    }
+}
+
+/// Convert a isize 1-based index into a usize 0-based index
+///
+/// The input can be negative with -1 meaning the last, -2 meaning the last but one, ...
+fn convert_index(index: isize, max: usize) -> usize {
+    if index >= 0 {
+        (index - 1) as usize
+    } else {
+        ((max as isize) + index) as usize
     }
 }

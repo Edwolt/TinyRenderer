@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Div, Mul, Sub};
 
 use super::Vertex3;
 
@@ -98,6 +98,17 @@ impl Mul for Point {
 impl Mul<i32> for Point {
     type Output = Point;
     fn mul(self, other: i32) -> Point {
+        Point {
+            x: self.x * other,
+            y: self.y * other,
+        }
+    }
+}
+
+/// Product with a scalar
+impl Div<i32> for Point {
+    type Output = Point;
+    fn div(self, other: i32) -> Point {
         Point {
             x: self.x * other,
             y: self.y * other,

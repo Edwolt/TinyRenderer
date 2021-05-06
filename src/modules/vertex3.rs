@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Div, Mul, Sub};
 
 use super::Point;
 
@@ -11,7 +11,10 @@ pub struct Vertex3 {
 
 impl Vertex3 {
     /// Caculate barycentric coordinates of a vertex P using the triangle
-    pub fn barycentric(p: Vertex3, triangle: (Vertex3, Vertex3, Vertex3)) -> Option<(f64, f64, f64)> {
+    pub fn barycentric(
+        p: Vertex3,
+        triangle: (Vertex3, Vertex3, Vertex3),
+    ) -> Option<(f64, f64, f64)> {
         // Barycentric coordinates is the (α, β, 𝛾) where
         // P = α*A + β*B + 𝛾*C and α + β + 𝛾 = 1
 
@@ -70,7 +73,7 @@ impl Vertex3 {
                 z: 0.0,
             };
         }
-        self * (1.0 / self.norm())
+        self / self.norm()
     }
 
     /// Cross product
@@ -143,6 +146,18 @@ impl Mul<f64> for Vertex3 {
             x: self.x * other,
             y: self.y * other,
             z: self.z * other,
+        }
+    }
+}
+
+/// Product with the inverse of the scalar (u / a := u * (1 / a))
+impl Div<f64> for Vertex3 {
+    type Output = Vertex3;
+    fn div(self, other: f64) -> Vertex3 {
+        Vertex3 {
+            x: self.x / other,
+            y: self.y / other,
+            z: self.z / other,
         }
     }
 }

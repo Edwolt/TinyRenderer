@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Div, Mul, Sub};
 
 use super::{Point, Vertex3};
 
@@ -67,7 +67,7 @@ impl Vertex2 {
         if self.x.abs() < f64::EPSILON && self.y.abs() < f64::EPSILON {
             Vertex2 { x: 0.0, y: 0.0 }
         } else {
-            self * (1.0 / self.norm())
+            self / self.norm()
         }
     }
 
@@ -122,6 +122,17 @@ impl Mul<f64> for Vertex2 {
         Vertex2 {
             x: self.x * other,
             y: self.y * other,
+        }
+    }
+}
+
+/// Product with the inverse of the scalar (u / a := u * (1 / a))
+impl Div<f64> for Vertex2 {
+    type Output = Vertex2;
+    fn div(self, other: f64) -> Vertex2 {
+        Vertex2 {
+            x: self.x / other,
+            y: self.y / other,
         }
     }
 }
