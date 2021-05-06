@@ -5,7 +5,7 @@ use std::io::{BufReader, BufWriter};
 use std::io::{Read, Write};
 use std::io::{Seek, SeekFrom};
 
-use crate::modules::{Color, Point, Vertex3, Vertex2};
+use crate::modules::{Color, Point, Vertex2, Vertex3};
 
 // Using i32 because Point use i32
 pub struct Image {
@@ -31,6 +31,7 @@ fn inside_triangle_barycentric(bary: Option<(f64, f64, f64)>) -> bool {
 }
 
 impl Image {
+    /// Create a new image with all pixels with the color black
     pub fn new(width: i32, height: i32) -> Image {
         let size = (width * height) as usize;
         Image {
@@ -63,6 +64,7 @@ impl Image {
         }
     }
 
+    /// Flip the image vertically
     pub fn flip_vertically(&mut self) {
         let mut pixels: Vec<Color> = Vec::new();
         for y in (0..self.height).rev() {
@@ -73,6 +75,7 @@ impl Image {
         self.pixels = pixels;
     }
 
+    /// Flip the image horizontally
     pub fn flip_horizontally(&mut self) {
         let mut pixels: Vec<Color> = Vec::new();
         for y in 0..self.height {
@@ -145,7 +148,7 @@ impl Image {
     }
 
     /// Draw a triangle defined by the vertices v0, v1, v2
-    /// filled with the texture
+    /// filled with the diffuse texture
     /// using a zbuffer to prevent drawing a hidden triangle over other
     ///
     /// zbuffer length must be image.width * image.height
@@ -154,9 +157,9 @@ impl Image {
         &mut self,
         zbuffer: &mut Vec<f64>,
         texture: &Image,
-        intensity: f64,
         triangle: (Vertex3, Vertex3, Vertex3),
         texture_triangle: (Vertex2, Vertex2, Vertex2),
+        intensity: f64,
     ) {
         let (v0, v1, v2) = triangle;
         let w = self.width as usize;
@@ -557,6 +560,7 @@ impl Image {
         Ok(())
     }
 
+    // Load the image from a True Vision TGA fil
     pub fn load_tga(path: &str) -> std::io::Result<Image> {
         let mut file = BufReader::new(File::open(path)?);
         let mut buffer = [0u8; 4];

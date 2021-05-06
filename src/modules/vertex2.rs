@@ -58,11 +58,13 @@ impl Vertex2 {
         }
     }
 
+    /// Norm of the Vertex
     pub fn norm(self) -> f64 {
         let Vertex2 { x, y } = self;
         (x * x + y * y).sqrt()
     }
 
+    /// Vertex normalized
     pub fn normalize(self) -> Vertex2 {
         if self.x.abs() < f64::EPSILON && self.y.abs() < f64::EPSILON {
             Vertex2 { x: 0.0, y: 0.0 }
@@ -126,7 +128,7 @@ impl Mul<f64> for Vertex2 {
     }
 }
 
-/// Product with the inverse of the scalar (u / a := u * (1 / a))
+/// Product with the inverse of the scalar (u / a means u * (1 / a))
 impl Div<f64> for Vertex2 {
     type Output = Vertex2;
     fn div(self, other: f64) -> Vertex2 {

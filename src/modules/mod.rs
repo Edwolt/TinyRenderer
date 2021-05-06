@@ -10,6 +10,6 @@ pub use vertex3::Vertex3;
 mod vertex2;
 pub use vertex2::Vertex2;
 
-#[macro_use]
 mod matrix;
+pub use crate::mat;
 pub use matrix::Matrix;

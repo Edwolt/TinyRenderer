@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-#[macro_use]
 mod modules;
 use modules::{Color, Vertex3};
 
@@ -10,8 +9,7 @@ use image::Image;
 mod model;
 use model::Model;
 
-
-// Const 
+// const MODEL: &str = "diablo3_pose";
 const MODEL: &str = "african_head";
 
 const WIDTH: i32 = 1024;
@@ -46,21 +44,20 @@ where
 }
 
 fn main() {
-    // const MODEL: &str = "diablo3_pose";
-
     println!("Opening model and texture\n");
 
-    let texture = {
-        let path = format!("obj/{0}/{0}_diffuse.tga", MODEL);
-        Image::load_tga(path.as_str()).expect("Can't load texture")
-    };
     let model = {
-        let path = format!("obj/{0}/{0}.obj", MODEL);
-        Model::new(path.as_str()).expect("Can't open model")
+        let image_path_string = format!("obj/{0}/{0}.obj", MODEL);
+        let texture_path_string = format!("obj/{0}/{0}_diffuse.tga", MODEL);
+
+        let image_path = image_path_string.as_str();
+        let texture_path = texture_path_string.as_str();
+
+        Model::new(image_path, Some(texture_path)).expect("Can't open model")
     };
 
     wrap_render("Wireframe", "wireframe.tga", |image| {
-        model.wireframe(image, Color::hex(b"#FFF"))
+        model.render_wireframe(image, Color::hex(b"#FFF"))
     });
 
     wrap_render("Render Color", "color.tga", |image| {
@@ -68,11 +65,11 @@ fn main() {
     });
 
     wrap_render("Render Texture", "texture.tga", |image| {
-        model.render_texture(image, &texture, LIGHT_SOURCE)
+        model.render_texture(image, LIGHT_SOURCE)
     });
 
     wrap_render("Perspective", "perspective.tga", |image| {
-        model.render_perspective(image, CAMERA_Z, &texture, LIGHT_SOURCE);
+        model.render_perspective(image, CAMERA_Z, LIGHT_SOURCE);
     });
 
     println!("Images created with success");

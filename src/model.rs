@@ -2,19 +2,31 @@ use std::fs::File;
 use std::io::Read;
 
 use crate::image::Image;
-use crate::modules::{Color, Matrix, Vertex2, Vertex3};
+use crate::modules::{mat, Color, Matrix, Vertex2, Vertex3};
 
 type Element = (isize, Option<isize>, Option<isize>);
+/// Representation of a 3D model loaded from a Wavefront obj
 pub struct Model {
+    /// (v) vertices of the model
     vertices: Vec<Vertex3>,
+
+    /// (vt) vertices in the diffuse texture
     textures: Vec<Vertex2>,
-    normal: Vec<Vertex3>,
+
+    /// (vn) Normals of the vertices
+    normals: Vec<Vertex3>,
+
+    /// (f) A list of faces that is a list of indexes
+    /// (vertex, Option<texture_vertex>, Option<normal>)
     faces: Vec<Vec<Element>>,
+
+    /// The diffuse texture image
+    diffuse: Option<Image>,
 }
 
 impl Model {
     /// Wireframe Render in orthographic projection
-    pub fn wireframe(&self, image: &mut Image, color: Color) {
+    pub fn render_wireframe(&self, image: &mut Image, color: Color) {
         for face in self.faces() {
             let mut v = match face.last() {
                 Some(v) => v.0,
@@ -51,10 +63,15 @@ impl Model {
 
     /// Render a image in orthographic projection
     /// using a diffuse texture image
-    pub fn render_texture(&self, image: &mut Image, texture: &Image, light: Vertex3) {
+    pub fn render_texture(&self, image: &mut Image, light: Vertex3) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
         for face in self.faces() {
+            let diffuse = match &self.diffuse {
+                Some(image) => image,
+                None => panic!("Model have no diffuse texture image"),
+            };
+
             let (u, ut, _) = face[0];
             let (v, vt, _) = face[1];
             let (w, wt, _) = face[2];
@@ -68,17 +85,63 @@ impl Model {
 
             image.triangle_zbuffer_texture(
                 &mut zbuffer,
-                &texture,
-                intensity,
+                &diffuse,
                 (u, v, w),
                 (ut, vt, wt),
+                intensity,
             );
         }
     }
 
-    /// Calculate the normal of all vertices that wasn't calculated
-    fn compute_normal(&mut self) {
-        // Sum of the normal normals and count of normal of all vertex
+    /// Render a image in pespective projection
+    /// using a diffuse texture image
+    pub fn render_perspective(&self, image: &mut Image, camera_z: f64, light: Vertex3) {
+        let transform = mat![4, 4 =>
+            1.0, 0.0, 0.0,           0.0;
+            0.0, 1.0, 0.0,           0.0;
+            0.0, 0.0, 1.0,           0.0;
+            0.0, 0.0, -1.0/camera_z, 1.0;
+        ];
+
+        let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
+
+        for face in self.faces() {
+            let diffuse = match &self.diffuse {
+                Some(image) => image,
+                None => panic!("Model have no diffuse texture image"),
+            };
+
+            let (u, ut, _) = face[0];
+            let (v, vt, _) = face[1];
+            let (w, wt, _) = face[2];
+
+            let ut = ut.expect("Model have no texture vertex");
+            let vt = vt.expect("Model have no texture vertex");
+            let wt = wt.expect("Model have no texture vertex");
+
+            let up = (&transform * &u.to_matrix()).to_vertex3();
+            let vp = (&transform * &v.to_matrix()).to_vertex3();
+            let wp = (&transform * &w.to_matrix()).to_vertex3();
+
+            let normal = (w - u).cross(v - u).normalize();
+            let intensity = normal * light;
+
+            image.triangle_zbuffer_texture(
+                &mut zbuffer,
+                &diffuse,
+                (up, vp, wp),
+                (ut, vt, wt),
+                intensity,
+            );
+        }
+    }
+
+    /// Calculate the normals of all vertices that isn't calculated yet
+    ///
+    /// Actually this method calculate the normals of all vertex
+    /// and update only the normals that is None
+    fn compute_normals(&mut self) {
+        // Average[i] is the sum of the normals and count of normals of vertices[i]
         let mut average: Vec<(Vertex3, usize)> = vec![
             (
                 Vertex3 {
@@ -107,9 +170,9 @@ impl Model {
                 let index = convert_index(vi, self.vertices.len());
 
                 let (sum, count) = average[index];
-                average[index] = ((sum + normal).normalize(), count + 1);
+                average[index] = ((sum + normal), count + 1);
                 if let Some(vni) = vni {
-                    let vni = (convert_index(vni, self.normal.len()) + 1) as isize;
+                    let vni = (convert_index(vni, self.normals.len()) + 1) as isize;
                     vec[i] = (vi, vti, Some(vni));
                 }
             }
@@ -121,79 +184,24 @@ impl Model {
                 if vni.is_none() {
                     let v_index = convert_index(vi, self.vertices.len());
                     let (sum, count) = average[v_index];
-                    self.normal.push(sum / (count as f64));
+                    self.normals.push(sum / (count as f64));
 
-                    let vni = Some(self.normal.len() as isize);
+                    let vni = Some(self.normals.len() as isize);
                     vec[i] = (vi, vti, vni);
                 }
             }
         }
     }
 
-    /// Render a image in pespective projection
-    /// using a diffuse texture image
-    pub fn render_perspective(
-        &self,
-        image: &mut Image,
-        camera_z: f64,
-        texture: &Image,
-        light: Vertex3,
-    ) {
-        fn vertex3_to_matrix(Vertex3 { x, y, z }: Vertex3) -> Matrix {
-            mat![4, 1 =>
-                x;
-                y;
-                z;
-                1.0;
-            ]
-        }
+    /// Create a model from a Wavefront obj file
+    /// and use the Truevision TGA file in texture_path if it isn't None
+    pub fn new(model_path: &str, texture_path: Option<&str>) -> std::io::Result<Model> {
+        let diffuse = match texture_path {
+            Some(path) => Some(Image::load_tga(path)?),
+            None => None,
+        };
 
-        fn matrix_to_vertex3(matrix: Matrix) -> Vertex3 {
-            let w = matrix.get(3, 0);
-            Vertex3 {
-                x: matrix.get(0, 0) / w,
-                y: matrix.get(1, 0) / w,
-                z: matrix.get(2, 0) / w,
-            }
-        }
-
-        let transform = mat![4, 4 =>
-            1.0, 0.0, 0.0,           0.0;
-            0.0, 1.0, 0.0,           0.0;
-            0.0, 0.0, 1.0,           0.0;
-            0.0, 0.0, -1.0/camera_z, 1.0;
-        ];
-
-        let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
-
-        for face in self.faces() {
-            let (u, ut, _) = face[0];
-            let (v, vt, _) = face[1];
-            let (w, wt, _) = face[2];
-
-            let ut = ut.expect("Model have no texture vertex");
-            let vt = vt.expect("Model have no texture vertex");
-            let wt = wt.expect("Model have no texture vertex");
-
-            let up = matrix_to_vertex3(&transform * &vertex3_to_matrix(u));
-            let vp = matrix_to_vertex3(&transform * &vertex3_to_matrix(v));
-            let wp = matrix_to_vertex3(&transform * &vertex3_to_matrix(w));
-
-            let normal = (w - u).cross(v - u).normalize();
-            let intensity = normal * light;
-
-            image.triangle_zbuffer_texture(
-                &mut zbuffer,
-                &texture,
-                intensity,
-                (up, vp, wp),
-                (ut, vt, wt),
-            );
-        }
-    }
-
-    pub fn new(path: &str) -> std::io::Result<Model> {
-        let mut file = File::open(path)?;
+        let mut file = File::open(model_path)?;
 
         let mut lines: String = String::new();
         file.read_to_string(&mut lines)?;
@@ -203,16 +211,17 @@ impl Model {
             vertices: Vec::new(),
             faces: Vec::new(),
             textures: Vec::new(),
-            normal: Vec::new(),
+            normals: Vec::new(),
+            diffuse,
         };
 
-        let mut no_computed_normal = false;
+        let mut no_computed_normals = false;
         for line in lines {
             let mut data = line.split(" ").filter(|string| !string.is_empty());
 
             match data.next() {
                 Some("v") => model.vertices.push({
-                    /// A function to reduce repeated code
+                    /// Function to reduce repeated code
                     fn v_parse(data: Option<&str>) -> f64 {
                         data.expect(
                             "Invalid Wavefront Obj: Vertex have less than three coordinates",
@@ -229,7 +238,7 @@ impl Model {
                     }
                 }),
                 Some("vt") => model.textures.push({
-                    /// A function to reduce repeated code
+                    /// Function to reduce repeated code
                     fn vt_parse(data: Option<&str>) -> f64 {
                         data.expect(
                             "Invalid Wavefront Obj: Texture Vertex have less than two coordinates",
@@ -244,8 +253,8 @@ impl Model {
                         y: vt_parse(data.next()),
                     }
                 }),
-                Some("vn") => model.normal.push({
-                    /// A function to reduce repeated code
+                Some("vn") => model.normals.push({
+                    /// Function to reduce repeated code
                     fn vn_parse(data: Option<&str>) -> f64 {
                         data.expect(
                             "Invalid Wavefront Obj: Normal have less than three coordinates",
@@ -298,7 +307,7 @@ impl Model {
                                 )
                             }
                             None => {
-                                no_computed_normal = true;
+                                no_computed_normals = true;
                                 None
                             },
                         };
@@ -311,13 +320,14 @@ impl Model {
             }
         }
 
-        if no_computed_normal {
-            model.compute_normal();
+        if no_computed_normals {
+            model.compute_normals();
         }
 
         Ok(model)
     }
 
+    /// Iterator of faces that is (vertex, Option<texture_vertex>, normal)
     pub fn faces(&self) -> FaceIterator {
         FaceIterator {
             model: self,
@@ -350,7 +360,7 @@ impl<'a> Iterator for FaceIterator<'a> {
                 Some(vti) => Some(model.textures[convert_index(vti, model.textures.len())]),
                 None => None,
             };
-            let vn = model.normal[convert_index(vni.unwrap(), model.normal.len())];
+            let vn = model.normals[convert_index(vni.unwrap(), model.normals.len())];
 
             result.push((v, vt, vn));
         }

@@ -1,6 +1,6 @@
 use std::ops::{Add, Div, Mul, Sub};
 
-use super::Point;
+use super::{mat, Matrix, Point};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Vertex3 {
@@ -59,11 +59,13 @@ impl Vertex3 {
         }
     }
 
+    /// Norm of the Vertex
     pub fn norm(self) -> f64 {
         let Vertex3 { x, y, z } = self;
         (x * x + y * y + z * z).sqrt()
     }
 
+    /// Vertex normalized
     pub fn normalize(self) -> Vertex3 {
         if self.x.abs() < f64::EPSILON && self.y.abs() < f64::EPSILON && self.z.abs() < f64::EPSILON
         {
@@ -97,6 +99,7 @@ impl Vertex3 {
         }
     }
 
+    /// Convert to a Point
     pub fn to_point(self, width: i32, height: i32) -> Point {
         // Vertex3 vary from -1 to 1
         let x = (self.x + 1.0) * ((width - 1) as f64) / 2.0;
@@ -105,6 +108,18 @@ impl Vertex3 {
             x: x as i32,
             y: y as i32,
         }
+    }
+
+    /// Convert to a Matrix 4x1
+    ///
+    /// (x, y, z) -> (x, y, z, 1) -> mat![4, 1 => x; y; z; 1]
+    pub fn to_matrix(self) -> Matrix {
+        mat![4, 1 =>
+            self.x;
+            self.y;
+            self.z;
+            1.0;
+        ]
     }
 }
 
