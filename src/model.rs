@@ -2,19 +2,19 @@ use std::fs::File;
 use std::io::Read;
 
 use crate::image::Image;
-use crate::modules::{mat, Color, Matrix, Vertex2, Vertex3};
+use crate::modules::{mat, Color, Matrix, Vector2, Vector3};
 
 type Element = (isize, Option<isize>, Option<isize>);
 /// Representation of a 3D model loaded from a Wavefront obj
 pub struct Model {
     /// (v) vertices of the model
-    vertices: Vec<Vertex3>,
+    vertices: Vec<Vector3>,
 
     /// (vt) vertices in the diffuse texture
-    textures: Vec<Vertex2>,
+    textures: Vec<Vector2>,
 
     /// (vn) Normals of the vertices
-    normals: Vec<Vertex3>,
+    normals: Vec<Vector3>,
 
     /// (f) A list of faces that is a list of indexes
     /// (vertex, Option<texture_vertex>, Option<normal>)
@@ -45,7 +45,7 @@ impl Model {
 
     /// Render a image in orthographic projection
     /// using a color
-    pub fn render_color(&self, image: &mut Image, color: Color, light: Vertex3) {
+    pub fn render_color(&self, image: &mut Image, color: Color, light: Vector3) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
         for face in self.faces() {
@@ -53,7 +53,7 @@ impl Model {
             let (v, _, _) = face[1];
             let (w, _, _) = face[2];
 
-            let normal = Vertex3::normal(u, v, w);
+            let normal = Vector3::normal(u, v, w);
             let intensity = normal * light;
             let draw_color = color.light(intensity);
 
@@ -63,7 +63,7 @@ impl Model {
 
     /// Render a image in orthographic projection
     /// using a diffuse texture image
-    pub fn render_texture(&self, image: &mut Image, light: Vertex3) {
+    pub fn render_texture(&self, image: &mut Image, light: Vector3) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
         for face in self.faces() {
@@ -80,7 +80,7 @@ impl Model {
             let vt = vt.expect("Model have no texture vertex");
             let wt = wt.expect("Model have no texture vertex");
 
-            let normal = Vertex3::normal(u, v, w);
+            let normal = Vector3::normal(u, v, w);
             let intensity = normal * light;
 
             image.triangle_zbuffer_texture(
@@ -95,7 +95,7 @@ impl Model {
 
     /// Render a image in pespective projection
     /// using a diffuse texture image
-    pub fn render_perspective(&self, image: &mut Image, camera_z: f64, light: Vertex3) {
+    pub fn render_perspective(&self, image: &mut Image, camera_z: f64, light: Vector3) {
         let transform = mat![4, 4 =>
             1.0, 0.0, 0.0,           0.0;
             0.0, 1.0, 0.0,           0.0;
@@ -123,7 +123,7 @@ impl Model {
             let vp = (&transform * &v.to_matrix()).to_vertex3();
             let wp = (&transform * &w.to_matrix()).to_vertex3();
 
-            let normal = Vertex3::normal(u, v, w);
+            let normal = Vector3::normal(u, v, w);
             let intensity = normal * light;
 
             image.triangle_zbuffer_texture(
@@ -138,7 +138,7 @@ impl Model {
 
     /// Render a image in orthographic projection
     /// using Gouraud shading
-    pub fn render_gouraud_color(&self, image: &mut Image, color: Color, light: Vertex3) {
+    pub fn render_gouraud_color(&self, image: &mut Image, color: Color, light: Vector3) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
         for face in self.faces() {
@@ -163,13 +163,13 @@ impl Model {
 
     /// Calculate the normals of all vertices that isn't calculated yet
     ///
-    /// Actually this method calculate the normals of all vertex
+    /// Actually this method calculate the normals of all vertices
     /// and update only the normals that is None
     fn compute_normals(&mut self) {
         // Average[i] is the sum of the normals and count of normals of vertices[i]
-        let mut average: Vec<(Vertex3, usize)> = vec![
+        let mut average: Vec<(Vector3, usize)> = vec![
             (
-                Vertex3 {
+                Vector3 {
                     x: 0.0,
                     y: 0.0,
                     z: 0.0
@@ -188,7 +188,7 @@ impl Model {
             let v = self.vertices[convert_index(v_index, self.vertices.len())];
             let w = self.vertices[convert_index(w_index, self.vertices.len())];
 
-            let normal = Vertex3::normal(u, v, w);
+            let normal = Vector3::normal(u, v, w);
 
             for i in 0..vec.len() {
                 let (vi, vti, vni) = vec[i];
@@ -256,7 +256,7 @@ impl Model {
                         .expect("Invalid Wavefront Obj: Vertex coordinate isn't a float")
                     }
 
-                    Vertex3 {
+                    Vector3 {
                         x: v_parse(data.next()),
                         y: v_parse(data.next()),
                         z: v_parse(data.next()),
@@ -273,7 +273,7 @@ impl Model {
                         .expect("Invalid Wavefront Obj: Texture Vertex coordinate isn't a float")
                     }
 
-                    Vertex2 {
+                    Vector2 {
                         x: vt_parse(data.next()),
                         y: vt_parse(data.next()),
                     }
@@ -289,7 +289,7 @@ impl Model {
                         .expect("Invalid Wavefront Obj: Normal coordinate isn't a float")
                     }
 
-                    Vertex3 {
+                    Vector3 {
                         x: vn_parse(data.next()),
                         y: vn_parse(data.next()),
                         z: vn_parse(data.next()),
@@ -368,7 +368,7 @@ pub struct FaceIterator<'a> {
 }
 
 impl<'a> Iterator for FaceIterator<'a> {
-    type Item = Vec<(Vertex3, Option<Vertex2>, Vertex3)>;
+    type Item = Vec<(Vector3, Option<Vector2>, Vector3)>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.index >= self.model.faces.len() {
             return None;

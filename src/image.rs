@@ -5,7 +5,7 @@ use std::io::{BufReader, BufWriter};
 use std::io::{Read, Write};
 use std::io::{Seek, SeekFrom};
 
-use crate::modules::{Color, Point, Vertex2, Vertex3};
+use crate::modules::{Color, Point, Vector2, Vector3};
 
 // Using i32 because Point use i32
 pub struct Image {
@@ -114,7 +114,7 @@ impl Image {
     pub fn triangle_zbuffer(
         &mut self,
         zbuffer: &mut Vec<f64>,
-        triangle: (Vertex3, Vertex3, Vertex3),
+        triangle: (Vector3, Vector3, Vector3),
         color: Color,
     ) {
         let (v0, v1, v2) = triangle;
@@ -136,7 +136,7 @@ impl Image {
                 let p = Point { x, y };
                 let bary = Point::barycentric(p, (p0, p1, p2));
                 if inside_triangle_barycentric(bary) {
-                    let z = Vertex3::lerp(bary, (v0, v1, v2)).unwrap().z;
+                    let z = Vector3::lerp(bary, (v0, v1, v2)).unwrap().z;
                     let i = index(y as usize, x as usize);
                     if i < zbuffer.len() as usize && zbuffer[i] < z {
                         zbuffer[i] = z;
@@ -157,8 +157,8 @@ impl Image {
         &mut self,
         zbuffer: &mut Vec<f64>,
         texture: &Image,
-        triangle: (Vertex3, Vertex3, Vertex3),
-        texture_triangle: (Vertex2, Vertex2, Vertex2),
+        triangle: (Vector3, Vector3, Vector3),
+        texture_triangle: (Vector2, Vector2, Vector2),
         intensity: f64,
     ) {
         let (v0, v1, v2) = triangle;
@@ -180,11 +180,11 @@ impl Image {
                 let p = Point { x, y };
                 let bary = Point::barycentric(p, (p0, p1, p2));
                 if inside_triangle_barycentric(bary) {
-                    let z = Vertex3::lerp(bary, (v0, v1, v2)).unwrap().z;
+                    let z = Vector3::lerp(bary, (v0, v1, v2)).unwrap().z;
                     let i = index(y as usize, x as usize);
                     if i < zbuffer.len() as usize && zbuffer[i] < z {
                         zbuffer[i] = z;
-                        let t = Vertex2::lerp(bary, texture_triangle)
+                        let t = Vector2::lerp(bary, texture_triangle)
                             .unwrap()
                             .to_point(texture.width, texture.height);
 
@@ -205,10 +205,10 @@ impl Image {
     pub fn triangle_zbuffer_gourad_color(
         &mut self,
         zbuffer: &mut Vec<f64>,
-        triangle: (Vertex3, Vertex3, Vertex3),
-        triangle_normals: (Vertex3, Vertex3, Vertex3),
+        triangle: (Vector3, Vector3, Vector3),
+        triangle_normals: (Vector3, Vector3, Vector3),
         color: Color,
-        light: Vertex3,
+        light: Vector3,
     ) {
         let (v0, v1, v2) = triangle;
         let w = self.width as usize;
@@ -229,11 +229,11 @@ impl Image {
                 let p = Point { x, y };
                 let bary = Point::barycentric(p, (p0, p1, p2));
                 if inside_triangle_barycentric(bary) {
-                    let z = Vertex3::lerp(bary, (v0, v1, v2)).unwrap().z;
+                    let z = Vector3::lerp(bary, (v0, v1, v2)).unwrap().z;
                     let i = index(y as usize, x as usize);
                     if i < zbuffer.len() as usize && zbuffer[i] < z {
                         zbuffer[i] = z;
-                        let normal = Vertex3::lerp(bary, triangle_normals).unwrap();
+                        let normal = Vector3::lerp(bary, triangle_normals).unwrap();
                         self.set(p, color.light(normal * light));
                     }
                 }

@@ -3,17 +3,17 @@ use std::ops::{Add, Div, Mul, Sub};
 use super::{mat, Matrix, Point};
 
 #[derive(Copy, Clone, Debug)]
-pub struct Vertex3 {
+pub struct Vector3 {
     pub x: f64,
     pub y: f64,
     pub z: f64,
 }
 
-impl Vertex3 {
-    /// Caculate barycentric coordinates of a vertex P using the triangle
+impl Vector3 {
+    /// Caculate barycentric coordinates of a vector v using the triangle
     pub fn barycentric(
-        p: Vertex3,
-        triangle: (Vertex3, Vertex3, Vertex3),
+        v: Vector3,
+        triangle: (Vector3, Vector3, Vector3),
     ) -> Option<(f64, f64, f64)> {
         // Barycentric coordinates is the (α, β, 𝛾) where
         // P = α*A + β*B + 𝛾*C and α + β + 𝛾 = 1
@@ -22,20 +22,20 @@ impl Vertex3 {
 
         let ab = b - a;
         let ac = c - a;
-        let pa = a - p;
+        let va = a - v;
 
-        let vec_x = Vertex3 {
+        let vec_x = Vector3 {
             x: ab.x,
             y: ac.x,
-            z: pa.x,
+            z: va.x,
         };
-        let vec_y = Vertex3 {
+        let vec_y = Vector3 {
             x: ab.y,
             y: ac.y,
-            z: pa.y,
+            z: va.y,
         };
 
-        let Vertex3 { x: u, y: v, z } = vec_x.cross(vec_y);
+        let Vector3 { x: u, y: v, z } = vec_x.cross(vec_y);
 
         // z can't be zero
         if z.abs() < f64::EPSILON {
@@ -50,8 +50,8 @@ impl Vertex3 {
     /// Linear interpolation
     pub fn lerp(
         barycentric: Option<(f64, f64, f64)>,
-        triangle: (Vertex3, Vertex3, Vertex3),
-    ) -> Option<Vertex3> {
+        triangle: (Vector3, Vector3, Vector3),
+    ) -> Option<Vector3> {
         let (a, b, c) = triangle;
         match barycentric {
             Some((alpha, beta, gamma)) => Some(a * alpha + b * beta + c * gamma),
@@ -59,17 +59,17 @@ impl Vertex3 {
         }
     }
 
-    /// Norm of the Vertex
+    /// Norm of the vector
     pub fn norm(self) -> f64 {
-        let Vertex3 { x, y, z } = self;
+        let Vector3 { x, y, z } = self;
         (x * x + y * y + z * z).sqrt()
     }
 
-    /// Vertex normalized
-    pub fn normalize(self) -> Vertex3 {
+    /// Vector normalized
+    pub fn normalize(self) -> Vector3 {
         if self.x.abs() < f64::EPSILON && self.y.abs() < f64::EPSILON && self.z.abs() < f64::EPSILON
         {
-            return Vertex3 {
+            return Vector3 {
                 x: 0.0,
                 y: 0.0,
                 z: 0.0,
@@ -78,25 +78,25 @@ impl Vertex3 {
         self / self.norm()
     }
 
-    pub fn normal(u: Vertex3, v: Vertex3, w: Vertex3) -> Vertex3 {
+    pub fn normal(u: Vector3, v: Vector3, w: Vector3) -> Vector3 {
         (v - u).cross(w - u).normalize()
     }
 
     /// Cross product
-    pub fn cross(self, other: Vertex3) -> Vertex3 {
-        let Vertex3 {
+    pub fn cross(self, other: Vector3) -> Vector3 {
+        let Vector3 {
             x: x0,
             y: y0,
             z: z0,
         } = self;
 
-        let Vertex3 {
+        let Vector3 {
             x: x1,
             y: y1,
             z: z1,
         } = other;
 
-        Vertex3 {
+        Vector3 {
             x: y0 * z1 - y1 * z0,
             y: z0 * x1 - x0 * z1,
             z: x0 * y1 - y0 * x1,
@@ -127,10 +127,10 @@ impl Vertex3 {
     }
 }
 
-impl Add for Vertex3 {
-    type Output = Vertex3;
-    fn add(self, other: Vertex3) -> Vertex3 {
-        Vertex3 {
+impl Add for Vector3 {
+    type Output = Vector3;
+    fn add(self, other: Vector3) -> Vector3 {
+        Vector3 {
             x: self.x + other.x,
             y: self.y + other.y,
             z: self.z + other.z,
@@ -138,10 +138,10 @@ impl Add for Vertex3 {
     }
 }
 
-impl Sub for Vertex3 {
-    type Output = Vertex3;
-    fn sub(self, other: Vertex3) -> Vertex3 {
-        Vertex3 {
+impl Sub for Vector3 {
+    type Output = Vector3;
+    fn sub(self, other: Vector3) -> Vector3 {
+        Vector3 {
             x: self.x - other.x,
             y: self.y - other.y,
             z: self.z - other.z,
@@ -150,18 +150,18 @@ impl Sub for Vertex3 {
 }
 
 /// Scalar product
-impl Mul for Vertex3 {
+impl Mul for Vector3 {
     type Output = f64;
-    fn mul(self, other: Vertex3) -> f64 {
+    fn mul(self, other: Vector3) -> f64 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 }
 
 /// Product with a scalar
-impl Mul<f64> for Vertex3 {
-    type Output = Vertex3;
-    fn mul(self, other: f64) -> Vertex3 {
-        Vertex3 {
+impl Mul<f64> for Vector3 {
+    type Output = Vector3;
+    fn mul(self, other: f64) -> Vector3 {
+        Vector3 {
             x: self.x * other,
             y: self.y * other,
             z: self.z * other,
@@ -170,10 +170,10 @@ impl Mul<f64> for Vertex3 {
 }
 
 /// Product with the inverse of the scalar (u / a := u * (1 / a))
-impl Div<f64> for Vertex3 {
-    type Output = Vertex3;
-    fn div(self, other: f64) -> Vertex3 {
-        Vertex3 {
+impl Div<f64> for Vector3 {
+    type Output = Vector3;
+    fn div(self, other: f64) -> Vector3 {
+        Vector3 {
             x: self.x / other,
             y: self.y / other,
             z: self.z / other,

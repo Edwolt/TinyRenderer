@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 mod modules;
-use modules::{Color, Vertex3};
+use modules::{Color, Vector3};
 
 mod image;
 use image::Image;
@@ -16,12 +16,12 @@ const MODEL: &str = "african_head";
 const WIDTH: i32 = 1024;
 const HEIGHT: i32 = 1024;
 
-// const LIGHT_SOURCE: Vertex3 = Vertex3 {
+// const LIGHT_SOURCE: Vector3 = Vector3 {
 //     x: 1.0,
 //     y: -1.0,
 //     z: 1.0,
 // }.normalize();
-const LIGHT_SOURCE: Vertex3 = Vertex3 {
+const LIGHT_SOURCE: Vector3 = Vector3 {
     x: 0.5773502691896258,
     y: -0.5773502691896258,
     z: 0.5773502691896258,
