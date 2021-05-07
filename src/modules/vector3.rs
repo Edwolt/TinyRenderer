@@ -2,6 +2,7 @@ use std::ops::{Add, Div, Mul, Sub};
 
 use super::{mat, Matrix, Point};
 
+/// Represents a Vector or a Point with 3 Real coordinates
 #[derive(Copy, Clone, Debug)]
 pub struct Vector3 {
     pub x: f64,

@@ -96,12 +96,7 @@ impl Model {
     /// Render a image in pespective projection
     /// using a diffuse texture image
     pub fn render_perspective(&self, image: &mut Image, camera_z: f64, light_source: Vector3) {
-        let transform = mat![4, 4 =>
-            1.0, 0.0, 0.0,           0.0;
-            0.0, 1.0, 0.0,           0.0;
-            0.0, 0.0, 1.0,           0.0;
-            0.0, 0.0, -1.0/camera_z, 1.0;
-        ];
+        let transform = matrix_perspective(camera_z);
 
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
@@ -118,9 +113,9 @@ impl Model {
             let normal = Vector3::normal(u, v, w);
             let intensity = normal * light_source;
 
-            let u = (&transform * &u.to_matrix()).to_vector3();
-            let v = (&transform * &v.to_matrix()).to_vector3();
-            let w = (&transform * &w.to_matrix()).to_vector3();
+            let u = (&transform * u.to_matrix()).to_vector3();
+            let v = (&transform * v.to_matrix()).to_vector3();
+            let w = (&transform * w.to_matrix()).to_vector3();
 
             let ut = ut.expect("Model have no texture vertex");
             let vt = vt.expect("Model have no texture vertex");
@@ -160,12 +155,7 @@ impl Model {
     /// using a diffuse texture
     /// and Gouraud shading
     pub fn render_gouraud(&self, image: &mut Image, camera_z: f64, light_source: Vector3) {
-        let transform = mat![4, 4 =>
-            1.0, 0.0, 0.0,           0.0;
-            0.0, 1.0, 0.0,           0.0;
-            0.0, 0.0, 1.0,           0.0;
-            0.0, 0.0, -1.0/camera_z, 1.0;
-        ];
+        let transform = matrix_perspective(camera_z);
 
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
@@ -179,9 +169,9 @@ impl Model {
             let (v, vt, vn) = face[1];
             let (w, wt, wn) = face[2];
 
-            let u = (&transform * &u.to_matrix()).to_vector3();
-            let v = (&transform * &v.to_matrix()).to_vector3();
-            let w = (&transform * &w.to_matrix()).to_vector3();
+            let u = (&transform * u.to_matrix()).to_vector3();
+            let v = (&transform * v.to_matrix()).to_vector3();
+            let w = (&transform * w.to_matrix()).to_vector3();
 
             let ut = ut.expect("Model have no texture vertex");
             let vt = vt.expect("Model have no texture vertex");
@@ -196,6 +186,89 @@ impl Model {
                 light_source,
             );
         }
+    }
+
+    /// Matrix that change the size and the position of the model
+    ///
+    /// The model is mapped onto scree cube
+    /// [position.x, position.x+size.x] * [position.y, position.y+size.y] * [position.z, position.z+size.z]
+    fn viewport(position: Vector3, size: Vector3) -> Matrix {
+        let Vector3 { x, y, z } = position;
+        // w = width, h = height, d = depth
+        let Vector3 { x: w, y: h, z: d } = size;
+
+        mat![4, 4 =>
+            w / 2.0, 0.0,     0.0,   x + w / 2.0;
+            0.0,     h / 2.0, 0.0,   y + h / 2.0;
+            0.0,     0.0,     d/2.0, z + d / 2.0;
+            0.0,     0.0,     0.0,   1.0        ;
+        ]
+    }
+
+    /// Matrix that convert the coordinate to the frame (center, i', j' k')
+    /// Where eye is a point and the camera is in eye pointing to the center
+    /// and the vector up is in vertical
+    ///
+    /// eye is a point, center is a point, up is a vector
+    fn look_at(eye: Vector3, center: Vector3, up: Vector3) -> Matrix {
+        // The problem is:
+        // The origin of the new frame is the point C (center)
+        // the point E (eye) is in the z-axis of the frame and
+        // the vector u (up) has the x coordinate equals to zero
+        // because it's in vertical
+
+        // We want a matrix M that v' = v * M where v is in standard basis
+        // and v' is in the basis (i', j', k')
+        //
+        // We know that
+        // | 1 |           | 0 |           | 0 |
+        // | 0 | = M * i', | 1 | = M * j', | 0 | = M * k'
+        // | 0 |           | 0 |           | 1 |
+        //
+        // Then M (that is unique because it convert basis) is:
+        // | i'x  i'y  i'z |
+        // | j'x  j'y  j'z |
+        // | k'x  k'y  k'z |
+        //
+        // For example, i' * M =
+        // | i'x  i'y  i'z | | i'x |   | ||i'||  |   | 1 |
+        // | j'x  j'y  j'z | | i'y | = | i' * j' | = | 0 |
+        // | k'x  k'y  k'z | | i'z |   | i' * k' |   | 0 |
+        //
+        // To convert the coordinantes of the point P in the frame (O, i, j, k)
+        // to P' in the frame (C, i', j', k')
+        // first we move c to the origin O then we multiply by M
+        // P' = M * (P - C)
+        //
+        // It's the same that
+        // | P'x*r |   | i'x  i'y  i'z  0 | | 1  0  0  -cx |
+        // | P'y*r | = | j'x  j'y  j'z  0 | | 0  1  0  -cy |
+        // | P'z*r |   | k'x  k'y  k'z  0 | | 0  0  1  -cz |
+        // |   r   |   |  0    0    0   1 | | 0  0  0   1  |
+
+        // k' = CE / || CE ||
+        // i' = (u ^ k') / ||u ^ k'||
+        // j' = k' ^ i'
+
+        let k_ = (eye - center).normalize();
+        let i_ = up.cross(k_).normalize();
+        let j_ = k_.cross(i_).normalize(); // Don't need to be normalized
+
+        let m = mat![4, 4=>
+            i_.x, i_.y, i_.z, 0.0;
+            j_.x, j_.y, j_.z, 0.0;
+            k_.x, k_.y, k_.z, 0.0;
+            0.0,  0.0,  0.0,  1.0;
+        ];
+
+        let t = mat![4, 4 =>
+            1.0, 0.0, 0.0, -center.x;
+            0.0, 1.0, 0.0, -center.y;
+            0.0, 0.0, 1.0, -center.z;
+            0.0, 0.0, 0.0, -1.0;
+        ];
+
+        return m * t; // ModelView
     }
 
     /// Calculate the normals of all vertices that isn't calculated yet
@@ -431,6 +504,99 @@ impl<'a> Iterator for FaceIterator<'a> {
         self.index += 1;
         Some(result)
     }
+}
+
+/// Matrix that deform the coordinate to make a perspective projection
+fn matrix_perspective(camera_z: f64) -> Matrix {
+    mat![4, 4 =>
+        1.0, 0.0, 0.0,           0.0;
+        0.0, 1.0, 0.0,           0.0;
+        0.0, 0.0, 1.0,           0.0;
+        0.0, 0.0, -1.0/camera_z, 1.0;
+    ]
+}
+
+/// Matrix that change the size and the position of the model
+///
+/// The model is mapped onto scree cube
+/// [position.x, position.x+size.x] * [position.y, position.y+size.y] * [position.z, position.z+size.z]
+fn matrix_viewport(position: Vector3, size: Vector3) -> Matrix {
+    let Vector3 { x, y, z } = position;
+    // w = width, h = height, d = depth
+    let Vector3 { x: w, y: h, z: d } = size;
+
+    mat![4, 4 =>
+        w / 2.0, 0.0,     0.0,   x + w / 2.0;
+        0.0,     h / 2.0, 0.0,   y + h / 2.0;
+        0.0,     0.0,     d/2.0, z + d / 2.0;
+        0.0,     0.0,     0.0,   1.0        ;
+    ]
+}
+
+/// Matrix that convert the coordinate to the frame (center, i', j' k')
+/// Where eye is a point and the camera is in eye pointing to the center
+/// and the vector up is in vertical
+///
+/// eye is a point, center is a point, up is a vector
+fn matrix_model_view(eye: Vector3, center: Vector3, up: Vector3) -> Matrix {
+    // The problem is:
+    // The origin of the new frame is the point C (center)
+    // the point E (eye) is in the z-axis of the frame and
+    // the vector u (up) has the x coordinate equals to zero
+    // because it's in vertical
+
+    // We want a matrix M that v' = v * M where v is in standard basis
+    // and v' is in the basis (i', j', k')
+    //
+    // We know that
+    // | 1 |           | 0 |           | 0 |
+    // | 0 | = M * i', | 1 | = M * j', | 0 | = M * k'
+    // | 0 |           | 0 |           | 1 |
+    //
+    // Then M (that is unique because it convert basis) is:
+    // | i'x  i'y  i'z |
+    // | j'x  j'y  j'z |
+    // | k'x  k'y  k'z |
+    //
+    // For example, i' * M =
+    // | i'x  i'y  i'z | | i'x |   | ||i'||  |   | 1 |
+    // | j'x  j'y  j'z | | i'y | = | i' * j' | = | 0 |
+    // | k'x  k'y  k'z | | i'z |   | i' * k' |   | 0 |
+    //
+    // To convert the coordinantes of the point P in the frame (O, i, j, k)
+    // to P' in the frame (C, i', j', k')
+    // first we move c to the origin O then we multiply by M
+    // P' = M * (P - C)
+    //
+    // It's the same that
+    // | P'x*r |   | i'x  i'y  i'z  0 | | 1  0  0  -cx |
+    // | P'y*r | = | j'x  j'y  j'z  0 | | 0  1  0  -cy |
+    // | P'z*r |   | k'x  k'y  k'z  0 | | 0  0  1  -cz |
+    // |   r   |   |  0    0    0   1 | | 0  0  0   1  |
+
+    // k' = CE / || CE ||
+    // i' = (u ^ k') / ||u ^ k'||
+    // j' = k' ^ i'
+
+    let k_ = (eye - center).normalize();
+    let i_ = up.cross(k_).normalize();
+    let j_ = k_.cross(i_).normalize(); // Don't need to be normalized
+
+    let m = mat![4, 4=>
+        i_.x, i_.y, i_.z, 0.0;
+        j_.x, j_.y, j_.z, 0.0;
+        k_.x, k_.y, k_.z, 0.0;
+        0.0,  0.0,  0.0,  1.0;
+    ];
+
+    let t = mat![4, 4 =>
+        1.0, 0.0, 0.0, -center.x;
+        0.0, 1.0, 0.0, -center.y;
+        0.0, 0.0, 1.0, -center.z;
+        0.0, 0.0, 0.0, -1.0;
+    ];
+
+    return m * t; // ModelView
 }
 
 /// Convert a isize 1-based index into a usize 0-based index

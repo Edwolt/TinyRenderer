@@ -2,6 +2,7 @@ use std::ops::{Add, Div, Mul, Sub};
 
 use super::{Point, Vector3};
 
+/// Represents a Vector or a Point with 2 Real coordinates
 #[derive(Copy, Clone, Debug)]
 pub struct Vector2 {
     pub x: f64,

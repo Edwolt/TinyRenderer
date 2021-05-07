@@ -77,9 +77,82 @@ impl Matrix {
     }
 }
 
+// Matrix * Matrix
+impl Mul for Matrix {
+    type Output = Matrix;
+    fn mul(self, other: Matrix) -> Matrix {
+        assert_eq!(
+            self.m, other.n,
+            "Can't multiply a Matrix {}x{} with one {}x{}",
+            self.n, self.m, other.n, other.m
+        );
+        let mut data: Vec<f64> = Vec::new();
+        for i in 0..self.n {
+            for j in 0..other.m {
+                let mut val = 0.0;
+                for k in 0..self.m {
+                    val += self.get(i, k) * other.get(k, j)
+                }
+                data.push(val);
+            }
+        }
+
+        Matrix::new(data, self.n, other.m)
+    }
+}
+
+// Matrix * &Matrix
+impl Mul<&Matrix> for Matrix {
+    type Output = Matrix;
+    fn mul(self, other: &Matrix) -> Matrix {
+        assert_eq!(
+            self.m, other.n,
+            "Can't multiply a Matrix {}x{} with one {}x{}",
+            self.n, self.m, other.n, other.m
+        );
+        let mut data: Vec<f64> = Vec::new();
+        for i in 0..self.n {
+            for j in 0..other.m {
+                let mut val = 0.0;
+                for k in 0..self.m {
+                    val += self.get(i, k) * other.get(k, j)
+                }
+                data.push(val);
+            }
+        }
+
+        Matrix::new(data, self.n, other.m)
+    }
+}
+
+// &Matrix * &Matrix
 impl Mul for &Matrix {
     type Output = Matrix;
     fn mul(self, other: &Matrix) -> Matrix {
+        assert_eq!(
+            self.m, other.n,
+            "Can't multiply a Matrix {}x{} with one {}x{}",
+            self.n, self.m, other.n, other.m
+        );
+        let mut data: Vec<f64> = Vec::new();
+        for i in 0..self.n {
+            for j in 0..other.m {
+                let mut val = 0.0;
+                for k in 0..self.m {
+                    val += self.get(i, k) * other.get(k, j)
+                }
+                data.push(val);
+            }
+        }
+
+        Matrix::new(data, self.n, other.m)
+    }
+}
+
+// &Matrix * Matrix
+impl Mul<Matrix> for &Matrix {
+    type Output = Matrix;
+    fn mul(self, other: Matrix) -> Matrix {
         assert_eq!(
             self.m, other.n,
             "Can't multiply a Matrix {}x{} with one {}x{}",
