@@ -113,9 +113,9 @@ impl Model {
             let normal = Vector3::normal(u, v, w);
             let intensity = normal * light_source;
 
-            let u = (&transform * u.to_matrix()).to_vector3();
-            let v = (&transform * v.to_matrix()).to_vector3();
-            let w = (&transform * w.to_matrix()).to_vector3();
+            let u = (&transform * u.to_matrix(true)).to_vector3();
+            let v = (&transform * v.to_matrix(true)).to_vector3();
+            let w = (&transform * w.to_matrix(true)).to_vector3();
 
             let ut = ut.expect("Model have no texture vertex");
             let vt = vt.expect("Model have no texture vertex");
@@ -169,9 +169,9 @@ impl Model {
             let (v, vt, vn) = face[1];
             let (w, wt, wn) = face[2];
 
-            let u = (&transform * u.to_matrix()).to_vector3();
-            let v = (&transform * v.to_matrix()).to_vector3();
-            let w = (&transform * w.to_matrix()).to_vector3();
+            let u = (&transform * u.to_matrix(true)).to_vector3();
+            let v = (&transform * v.to_matrix(true)).to_vector3();
+            let w = (&transform * w.to_matrix(true)).to_vector3();
 
             let ut = ut.expect("Model have no texture vertex");
             let vt = vt.expect("Model have no texture vertex");
@@ -187,88 +187,69 @@ impl Model {
             );
         }
     }
+    /// Render a image in pespective projection
+    /// using a diffuse texture
+    /// and Gouraud shading
+    pub fn render_look_at(
+        &self,
+        image: &mut Image,
+        eye: Vector3,
+        center: Vector3,
+        up: Vector3,
+        light_source: Vector3,
+    ) {
+        let mut model_view = matrix_model_view(eye, center, up);
+        // Transformation chain: Viewport * Projection * View * Model * v
+        let transform = {
+            let position = Vector3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            };
+            let size = Vector3 {
+                x: image.height as f64,
+                y: image.width as f64,
+                z: 255.0,
+            };
 
-    /// Matrix that change the size and the position of the model
-    ///
-    /// The model is mapped onto scree cube
-    /// [position.x, position.x+size.x] * [position.y, position.y+size.y] * [position.z, position.z+size.z]
-    fn viewport(position: Vector3, size: Vector3) -> Matrix {
-        let Vector3 { x, y, z } = position;
-        // w = width, h = height, d = depth
-        let Vector3 { x: w, y: h, z: d } = size;
+            // matrix_viewport(position, size) *
+            matrix_perspective(eye.z) * &model_view
+        };
 
-        mat![4, 4 =>
-            w / 2.0, 0.0,     0.0,   x + w / 2.0;
-            0.0,     h / 2.0, 0.0,   y + h / 2.0;
-            0.0,     0.0,     d/2.0, z + d / 2.0;
-            0.0,     0.0,     0.0,   1.0        ;
-        ]
-    }
+        let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
 
-    /// Matrix that convert the coordinate to the frame (center, i', j' k')
-    /// Where eye is a point and the camera is in eye pointing to the center
-    /// and the vector up is in vertical
-    ///
-    /// eye is a point, center is a point, up is a vector
-    fn look_at(eye: Vector3, center: Vector3, up: Vector3) -> Matrix {
-        // The problem is:
-        // The origin of the new frame is the point C (center)
-        // the point E (eye) is in the z-axis of the frame and
-        // the vector u (up) has the x coordinate equals to zero
-        // because it's in vertical
+        model_view.transpose(); // Now it'll be used to convert vectors
+        for face in self.faces() {
+            let diffuse = match &self.diffuse {
+                Some(image) => image,
+                None => panic!("Model have no diffuse texture image"),
+            };
 
-        // We want a matrix M that v' = v * M where v is in standard basis
-        // and v' is in the basis (i', j', k')
-        //
-        // We know that
-        // | 1 |           | 0 |           | 0 |
-        // | 0 | = M * i', | 1 | = M * j', | 0 | = M * k'
-        // | 0 |           | 0 |           | 1 |
-        //
-        // Then M (that is unique because it convert basis) is:
-        // | i'x  i'y  i'z |
-        // | j'x  j'y  j'z |
-        // | k'x  k'y  k'z |
-        //
-        // For example, i' * M =
-        // | i'x  i'y  i'z | | i'x |   | ||i'||  |   | 1 |
-        // | j'x  j'y  j'z | | i'y | = | i' * j' | = | 0 |
-        // | k'x  k'y  k'z | | i'z |   | i' * k' |   | 0 |
-        //
-        // To convert the coordinantes of the point P in the frame (O, i, j, k)
-        // to P' in the frame (C, i', j', k')
-        // first we move c to the origin O then we multiply by M
-        // P' = M * (P - C)
-        //
-        // It's the same that
-        // | P'x*r |   | i'x  i'y  i'z  0 | | 1  0  0  -cx |
-        // | P'y*r | = | j'x  j'y  j'z  0 | | 0  1  0  -cy |
-        // | P'z*r |   | k'x  k'y  k'z  0 | | 0  0  1  -cz |
-        // |   r   |   |  0    0    0   1 | | 0  0  0   1  |
+            let (u, ut, un) = face[0];
+            let (v, vt, vn) = face[1];
+            let (w, wt, wn) = face[2];
 
-        // k' = CE / || CE ||
-        // i' = (u ^ k') / ||u ^ k'||
-        // j' = k' ^ i'
+            let u = (&transform * u.to_matrix(true)).to_vector3();
+            let v = (&transform * v.to_matrix(true)).to_vector3();
+            let w = (&transform * w.to_matrix(true)).to_vector3();
 
-        let k_ = (eye - center).normalize();
-        let i_ = up.cross(k_).normalize();
-        let j_ = k_.cross(i_).normalize(); // Don't need to be normalized
+            let ut = ut.expect("Model have no texture vertex");
+            let vt = vt.expect("Model have no texture vertex");
+            let wt = wt.expect("Model have no texture vertex");
 
-        let m = mat![4, 4=>
-            i_.x, i_.y, i_.z, 0.0;
-            j_.x, j_.y, j_.z, 0.0;
-            k_.x, k_.y, k_.z, 0.0;
-            0.0,  0.0,  0.0,  1.0;
-        ];
+            let un = (&model_view * un.to_matrix(false)).to_vector3();
+            let vn = (&model_view * vn.to_matrix(false)).to_vector3();
+            let wn = (&model_view * wn.to_matrix(false)).to_vector3();
 
-        let t = mat![4, 4 =>
-            1.0, 0.0, 0.0, -center.x;
-            0.0, 1.0, 0.0, -center.y;
-            0.0, 0.0, 1.0, -center.z;
-            0.0, 0.0, 0.0, -1.0;
-        ];
-
-        return m * t; // ModelView
+            image.triangle_zbuffer_gourad_texture(
+                &mut zbuffer,
+                &diffuse,
+                (u, v, w),
+                (ut, vt, wt),
+                (un, vn, wn),
+                light_source,
+            );
+        }
     }
 
     /// Calculate the normals of all vertices that isn't calculated yet

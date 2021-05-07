@@ -2,7 +2,7 @@ use std::ops::Mul;
 
 use super::Vector3;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Matrix {
     /// rows
     n: usize,
@@ -18,10 +18,12 @@ pub struct Matrix {
 /// mat![2.0; 3, 4]  
 /// ```
 ///
+/// <pre>
 /// Create a matrix 3x4 with the values
 /// |0, 1, 2|
 /// |6, 5, 4|
 /// |7, 8, 9|
+/// </pre>
 ///
 /// ```
 /// mat![3; 4 =>
@@ -53,27 +55,45 @@ impl Matrix {
         Matrix { n, m, data }
     }
 
-    /// Convert a matrix 4x1 to a vertex3
-    ///
-    /// mat![4, 1 => x; y; z; w] -> (x/w, y/w, z/w)
-    pub fn to_vector3(&self) -> Vector3 {
-        let w = self.get(3, 0);
-        Vector3 {
-            x: self.get(0, 0) / w,
-            y: self.get(1, 0) / w,
-            z: self.get(2, 0) / w,
-        }
-    }
-
     pub fn get(&self, i: usize, j: usize) -> f64 {
-        // assert!(i < self.n, "Matrix: Invalid i");
-        // assert!(j < self.n, "Matrix: Invalid j");
         self.data[i * self.m + j]
     }
     pub fn set(&mut self, i: usize, j: usize, value: f64) {
-        // assert!(i < self.n, "Matrix: i>=n (i={}, n={})", i, self.n);
-        // assert!(j < self.n, "Matrix: j>=m (j={}, m={})", j, self.m);
         self.data[i * self.m + j] = value;
+    }
+
+    pub fn transpose(&mut self) {
+        for i in 1..self.n {
+            for j in 0..i {
+                // swap(self[i][j], self[j][i])
+                let aux = self.get(i, j);
+                self.set(i, j, self.get(j, i));
+                self.set(j, i, aux);
+            }
+        }
+    }
+
+    /// Convert a matrix 4x1 that represents to a vertex3
+    ///
+    /// mat![4, 1 => x; y; z; w] -> (x/w, y/w, z/w)
+    pub fn to_vector3(&self) -> Vector3 {
+        assert!(self.n == 4 && self.m == 1, "Matrix must be 4x1");
+        let w = self.get(3, 0);
+        if w < f64::EPSILON {
+            // w = 0 => A Vector
+            Vector3 {
+                x: self.get(0, 0),
+                y: self.get(1, 0),
+                z: self.get(2, 0),
+            }
+        } else {
+            // w != 0 => A Point
+            Vector3 {
+                x: self.get(0, 0) / w,
+                y: self.get(1, 0) / w,
+                z: self.get(2, 0) / w,
+            }
+        }
     }
 }
 

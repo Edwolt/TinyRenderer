@@ -118,15 +118,31 @@ impl Vector3 {
         }
     }
 
-    /// Convert to a Matrix 4x1
+    /// Convert a point represented by a Vector3
+    /// to a Matrix 4x1
     ///
-    /// (x, y, z) -> (x, y, z, 1) -> mat![4, 1 => x; y; z; 1]
-    pub fn to_matrix(self) -> Matrix {
+    /// If it's represent a point:
+    /// <pre>
+    ///              | x |
+    /// (x, y, z) -> | y |
+    ///              | z |
+    ///              | 1 |
+    /// </pre>
+    ///
+    /// <pre>
+    /// if it's represent a vector
+    ///              | x |
+    /// (x, y, z) -> | y |
+    ///              | z |
+    ///              | 0 |
+    /// </pre>
+    pub fn to_matrix(self, is_a_point: bool) -> Matrix {
+        let w = if is_a_point { 1.0 } else { 0.0 };
         mat![4, 1 =>
             self.x;
             self.y;
             self.z;
-            1.0;
+            w;
         ]
     }
 }

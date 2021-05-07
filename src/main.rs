@@ -16,18 +16,30 @@ const MODEL: &str = "african_head";
 const WIDTH: i32 = 1024;
 const HEIGHT: i32 = 1024;
 
-// const LIGHT_SOURCE: Vector3 = Vector3 {
-//     x: 1.0,
-//     y: -1.0,
-//     z: 1.0,
-// }.normalize();
+// (1.0, -1.0, 1.0).normalize()
 const LIGHT_SOURCE: Vector3 = Vector3 {
     x: 0.5773502691896258,
     y: -0.5773502691896258,
     z: 0.5773502691896258,
 };
 
-const CAMERA_Z: f64 = 3.0;
+const CAMERA: Vector3 = Vector3 {
+    x: 1.0,
+    y: 1.0,
+    z: 3.0,
+};
+
+const CENTER: Vector3 = Vector3 {
+    x: 0.0,
+    y: 0.0,
+    z: 0.0,
+};
+
+const UP: Vector3 = Vector3 {
+    x: 0.0,
+    y: 1.0,
+    z: 0.0,
+};
 
 /// A function to reduce repeated code
 ///
@@ -75,7 +87,7 @@ fn main() {
     });
 
     wrap_render("Perspective", "perspective.tga", |image| {
-        model.render_perspective(image, CAMERA_Z, LIGHT_SOURCE);
+        model.render_perspective(image, CAMERA.z, LIGHT_SOURCE);
     });
 
     wrap_render("Gouraud Color", "gouraud_color.tga", |image| {
@@ -83,7 +95,11 @@ fn main() {
     });
 
     wrap_render("Gouraud", "gouraud.tga", |image| {
-        model.render_gouraud(image, CAMERA_Z, LIGHT_SOURCE);
+        model.render_gouraud(image, CAMERA.z, LIGHT_SOURCE);
+    });
+
+    wrap_render("Look at", "look_at.tga", |image| {
+        model.render_look_at(image, CAMERA, CENTER, UP, LIGHT_SOURCE);
     });
 
     println!("Images created with success");
