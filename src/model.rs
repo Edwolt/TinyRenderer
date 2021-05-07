@@ -34,8 +34,8 @@ impl Model {
             };
             for (u, _, _) in face {
                 image.line(
-                    u.to_point(image.width, image.height),
-                    v.to_point(image.width, image.height),
+                    u.to_image_point(image.width, image.height),
+                    v.to_image_point(image.width, image.height),
                     color,
                 );
                 v = u;
@@ -118,9 +118,9 @@ impl Model {
             let normal = Vector3::normal(u, v, w);
             let intensity = normal * light_source;
 
-            let u = (&transform * &u.to_matrix()).to_vertex3();
-            let v = (&transform * &v.to_matrix()).to_vertex3();
-            let w = (&transform * &w.to_matrix()).to_vertex3();
+            let u = (&transform * &u.to_matrix()).to_vector3();
+            let v = (&transform * &v.to_matrix()).to_vector3();
+            let w = (&transform * &w.to_matrix()).to_vector3();
 
             let ut = ut.expect("Model have no texture vertex");
             let vt = vt.expect("Model have no texture vertex");
@@ -179,9 +179,9 @@ impl Model {
             let (v, vt, vn) = face[1];
             let (w, wt, wn) = face[2];
 
-            let u = (&transform * &u.to_matrix()).to_vertex3();
-            let v = (&transform * &v.to_matrix()).to_vertex3();
-            let w = (&transform * &w.to_matrix()).to_vertex3();
+            let u = (&transform * &u.to_matrix()).to_vector3();
+            let v = (&transform * &v.to_matrix()).to_vector3();
+            let w = (&transform * &w.to_matrix()).to_vector3();
 
             let ut = ut.expect("Model have no texture vertex");
             let vt = vt.expect("Model have no texture vertex");

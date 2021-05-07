@@ -56,7 +56,7 @@ impl Matrix {
     /// Convert a matrix 4x1 to a vertex3
     ///
     /// mat![4, 1 => x; y; z; w] -> (x/w, y/w, z/w)
-    pub fn to_vertex3(&self) -> Vector3 {
+    pub fn to_vector3(&self) -> Vector3 {
         let w = self.get(3, 0);
         Vector3 {
             x: self.get(0, 0) / w,

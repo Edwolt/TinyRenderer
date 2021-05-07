@@ -103,8 +103,11 @@ impl Vector3 {
         }
     }
 
-    /// Convert to a Point
-    pub fn to_point(self, width: i32, height: i32) -> Point {
+    /// Convert a Vector3 with x, y ∈ [0, 1]
+    /// to a point in the image
+    /// with x ∈ [0, width]
+    /// and  y ∈ [0, height]
+    pub fn to_image_point(self, width: i32, height: i32) -> Point {
         // Vertex3 vary from -1 to 1
         let x = (self.x + 1.0) * ((width - 1) as f64) / 2.0;
         let y = (self.y + 1.0) * ((height - 1) as f64) / 2.0;

@@ -78,7 +78,11 @@ impl Vector2 {
         self.x * other.y - self.y * other.x
     }
 
-    pub fn to_point(self, width: i32, height: i32) -> Point {
+    /// Convert a Vector2 with x, y ∈ [0, 1]
+    /// to a point in the image
+    /// with x ∈ [0, width]
+    /// and  y ∈ [0, height]
+    pub fn to_texture_point(self, width: i32, height: i32) -> Point {
         // texture_vertex vary from 0 to 1
         let x = self.x * ((width - 1) as f64);
         let y = self.y * ((height - 1) as f64);
