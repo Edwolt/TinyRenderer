@@ -574,7 +574,7 @@ fn matrix_model_view(eye: Vector3, center: Vector3, up: Vector3) -> Matrix {
         1.0, 0.0, 0.0, -center.x;
         0.0, 1.0, 0.0, -center.y;
         0.0, 0.0, 1.0, -center.z;
-        0.0, 0.0, 0.0, -1.0;
+        0.0, 0.0, 0.0, 1.0;
     ];
 
     return m * t; // ModelView
