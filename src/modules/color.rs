@@ -66,12 +66,12 @@ impl Color {
     }
 
     /// Convert color to bytes
-    pub const fn to_bytes(&self) -> [u8; 3] {
+    pub fn to_bytes(&self) -> [u8; 3] {
         [self.b, self.g, self.r]
     }
 
     /// Convert bytes to color
-    pub const fn from_bytes(buffer: [u8; 3]) -> Color {
+    pub fn from_bytes(buffer: [u8; 3]) -> Color {
         let [b, g, r] = buffer;
         Color { r, g, b }
     }

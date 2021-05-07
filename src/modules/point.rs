@@ -62,7 +62,7 @@ impl Point {
     }
 
     /// Cross product norm with z = 0
-    pub const fn cross(self, other: Point) -> i32 {
+    pub fn cross(self, other: Point) -> i32 {
         self.x * other.y - self.y * other.x
     }
 }

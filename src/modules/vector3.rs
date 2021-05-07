@@ -105,7 +105,7 @@ impl Vector3 {
     }
 
     /// Convert a Vector3 { x, y, z } to a Point { x, y }
-    pub const fn to_point(self) -> Point {
+    pub fn to_point(self) -> Point {
         Point {
             x: self.x as i32,
             y: self.y as i32,
