@@ -45,13 +45,24 @@ impl Model {
 
     /// Render a image in orthographic projection
     /// using a color
-    pub fn render_color(&self, image: &mut Image, color: Color, light_source: Vector3) {
+    pub fn render_color(
+        &self,
+        image: &mut Image,
+        viewport: (Vector3, Vector3),
+        color: Color,
+        light_source: Vector3,
+    ) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
+        let transform = matrix_viewport(viewport.0, viewport.1);
 
         for face in self.faces() {
             let (u, _, _) = face[0];
             let (v, _, _) = face[1];
             let (w, _, _) = face[2];
+
+            let u = (&transform * u.to_matrix(true)).to_vector3();
+            let v = (&transform * v.to_matrix(true)).to_vector3();
+            let w = (&transform * w.to_matrix(true)).to_vector3();
 
             let normal = Vector3::normal(u, v, w);
             let intensity = normal * light_source;
@@ -63,8 +74,14 @@ impl Model {
 
     /// Render a image in orthographic projection
     /// using a diffuse texture image
-    pub fn render_texture(&self, image: &mut Image, light_source: Vector3) {
+    pub fn render_texture(
+        &self,
+        image: &mut Image,
+        viewport: (Vector3, Vector3),
+        light_source: Vector3,
+    ) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
+        let transform = matrix_viewport(viewport.0, viewport.1);
 
         for face in self.faces() {
             let diffuse = match &self.diffuse {
@@ -75,6 +92,10 @@ impl Model {
             let (u, ut, _) = face[0];
             let (v, vt, _) = face[1];
             let (w, wt, _) = face[2];
+
+            let u = (&transform * u.to_matrix(true)).to_vector3();
+            let v = (&transform * v.to_matrix(true)).to_vector3();
+            let w = (&transform * w.to_matrix(true)).to_vector3();
 
             let ut = ut.expect("Model have no texture vertex");
             let vt = vt.expect("Model have no texture vertex");
@@ -95,10 +116,15 @@ impl Model {
 
     /// Render a image in pespective projection
     /// using a diffuse texture image
-    pub fn render_perspective(&self, image: &mut Image, camera_z: f64, light_source: Vector3) {
-        let transform = matrix_perspective(camera_z);
-
+    pub fn render_perspective(
+        &self,
+        image: &mut Image,
+        viewport: (Vector3, Vector3),
+        camera_z: f64,
+        light_source: Vector3,
+    ) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
+        let transform = matrix_viewport(viewport.0, viewport.1) * matrix_perspective(camera_z);
 
         for face in self.faces() {
             let diffuse = match &self.diffuse {
@@ -133,13 +159,24 @@ impl Model {
 
     /// Render a image in orthographic projection
     /// using Gouraud shading
-    pub fn render_gouraud_color(&self, image: &mut Image, color: Color, light_source: Vector3) {
+    pub fn render_gouraud_color(
+        &self,
+        image: &mut Image,
+        viewport: (Vector3, Vector3),
+        color: Color,
+        light_source: Vector3,
+    ) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
+        let transform = matrix_viewport(viewport.0, viewport.1);
 
         for face in self.faces() {
             let (u, _, un) = face[0];
             let (v, _, vn) = face[1];
             let (w, _, wn) = face[2];
+
+            let u = (&transform * u.to_matrix(true)).to_vector3();
+            let v = (&transform * v.to_matrix(true)).to_vector3();
+            let w = (&transform * w.to_matrix(true)).to_vector3();
 
             image.triangle_zbuffer_gourad_color(
                 &mut zbuffer,
@@ -154,10 +191,15 @@ impl Model {
     /// Render a image in pespective projection
     /// using a diffuse texture
     /// and Gouraud shading
-    pub fn render_gouraud(&self, image: &mut Image, camera_z: f64, light_source: Vector3) {
-        let transform = matrix_perspective(camera_z);
-
+    pub fn render_gouraud(
+        &self,
+        image: &mut Image,
+        viewport: (Vector3, Vector3),
+        camera_z: f64,
+        light_source: Vector3,
+    ) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
+        let transform = matrix_viewport(viewport.0, viewport.1) * matrix_perspective(camera_z);
 
         for face in self.faces() {
             let diffuse = match &self.diffuse {
@@ -193,32 +235,21 @@ impl Model {
     pub fn render_look_at(
         &self,
         image: &mut Image,
+        viewport: (Vector3, Vector3),
         eye: Vector3,
         center: Vector3,
         up: Vector3,
         light_source: Vector3,
     ) {
-        let mut model_view = matrix_model_view(eye, center, up);
-        // Transformation chain: Viewport * Projection * View * Model * v
-        let transform = {
-            let position = Vector3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            };
-            let size = Vector3 {
-                x: image.height as f64,
-                y: image.width as f64,
-                z: 255.0,
-            };
-
-            // matrix_viewport(position, size) *
-            matrix_perspective(eye.z) * &model_view
-        };
-
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
+        // Transformation chain: Viewport * Projection * View * Model * v
+        let mut model_view = matrix_model_view(eye, center, up);
+        let transform =
+            matrix_viewport(viewport.0, viewport.1) * matrix_perspective(eye.z) * &model_view;
 
-        model_view.transpose(); // Now it'll be used to convert vectors
+        dbg!(&model_view);
+        model_view.transpose(); // Now it'll be used to convert normals
+        dbg!(&model_view);
         for face in self.faces() {
             let diffuse = match &self.diffuse {
                 Some(image) => image,
@@ -240,6 +271,7 @@ impl Model {
             let un = (&model_view * un.to_matrix(false)).to_vector3();
             let vn = (&model_view * vn.to_matrix(false)).to_vector3();
             let wn = (&model_view * wn.to_matrix(false)).to_vector3();
+            // dbg!(un, vn, wn);
 
             image.triangle_zbuffer_gourad_texture(
                 &mut zbuffer,

@@ -9,12 +9,14 @@ use image::Image;
 mod model;
 use model::Model;
 
-// const MODEL: &str = "diablo3_pose";
-const MODEL: &str = "african_head";
+const MODEL: &str = "diablo3_pose";
+// const MODEL: &str = "african_head";
 // const MODEL: &str = "african_head_novn";
 
 const WIDTH: i32 = 1024;
 const HEIGHT: i32 = 1024;
+
+const COLOR: Color = Color::hex(b"#dbc6b8");
 
 // (1.0, -1.0, 1.0).normalize()
 const LIGHT_SOURCE: Vector3 = Vector3 {
@@ -40,6 +42,19 @@ const UP: Vector3 = Vector3 {
     y: 1.0,
     z: 0.0,
 };
+
+const VIEWPORT: (Vector3, Vector3) = (
+    Vector3 {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+    },
+    Vector3 {
+        x: WIDTH as f64,
+        y: HEIGHT as f64,
+        z: 255.0,
+    },
+);
 
 /// A function to reduce repeated code
 ///
@@ -75,31 +90,31 @@ fn main() {
     };
 
     wrap_render("Wireframe", "wireframe.tga", |image| {
-        model.render_wireframe(image, Color::hex(b"#FFF"))
+        model.render_wireframe(image, COLOR)
     });
 
     wrap_render("Render Color", "color.tga", |image| {
-        model.render_color(image, Color::hex(b"#FFF"), LIGHT_SOURCE)
+        model.render_color(image, VIEWPORT, COLOR, LIGHT_SOURCE)
     });
 
     wrap_render("Render Texture", "texture.tga", |image| {
-        model.render_texture(image, LIGHT_SOURCE)
+        model.render_texture(image, VIEWPORT, LIGHT_SOURCE)
     });
 
     wrap_render("Perspective", "perspective.tga", |image| {
-        model.render_perspective(image, CAMERA.z, LIGHT_SOURCE);
+        model.render_perspective(image, VIEWPORT, CAMERA.z, LIGHT_SOURCE);
     });
 
     wrap_render("Gouraud Color", "gouraud_color.tga", |image| {
-        model.render_gouraud_color(image, Color::hex(b"#FFF"), LIGHT_SOURCE);
+        model.render_gouraud_color(image, VIEWPORT, COLOR, LIGHT_SOURCE);
     });
 
     wrap_render("Gouraud", "gouraud.tga", |image| {
-        model.render_gouraud(image, CAMERA.z, LIGHT_SOURCE);
+        model.render_gouraud(image, VIEWPORT, CAMERA.z, LIGHT_SOURCE);
     });
 
     wrap_render("Look at", "look_at.tga", |image| {
-        model.render_look_at(image, CAMERA, CENTER, UP, LIGHT_SOURCE);
+        model.render_look_at(image, VIEWPORT, CAMERA, CENTER, UP, LIGHT_SOURCE);
     });
 
     println!("Images created with success");

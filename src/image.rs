@@ -122,9 +122,9 @@ impl Image {
         let index = |i: usize, j: usize| i * (w as usize) + j;
 
         // Convert vertices to points in image
-        let p0 = v0.to_image_point(self.width, self.height);
-        let p1 = v1.to_image_point(self.width, self.height);
-        let p2 = v2.to_image_point(self.width, self.height);
+        let p0 = v0.to_point();
+        let p1 = v1.to_point();
+        let p2 = v2.to_point();
 
         // Find a box where that fit the triangle
         let max_x = (p0.x.max(p1.x).max(p2.x) + 10).min(self.width - 1);
@@ -168,9 +168,9 @@ impl Image {
         let index = |i: usize, j: usize| i * (w as usize) + j;
 
         // Convert vertices to points in the image
-        let p0 = v0.to_image_point(self.width, self.height);
-        let p1 = v1.to_image_point(self.width, self.height);
-        let p2 = v2.to_image_point(self.width, self.height);
+        let p0 = v0.to_point();
+        let p1 = v1.to_point();
+        let p2 = v2.to_point();
 
         // Find a box where that fit the triangle
         let max_x = p0.x.max(p1.x).max(p2.x).min(self.width - 1);
@@ -220,9 +220,9 @@ impl Image {
         let index = |i: usize, j: usize| i * (w as usize) + j;
 
         // Convert vertices to points in the image
-        let p0 = v0.to_image_point(self.width, self.height);
-        let p1 = v1.to_image_point(self.width, self.height);
-        let p2 = v2.to_image_point(self.width, self.height);
+        let p0 = v0.to_point();
+        let p1 = v1.to_point();
+        let p2 = v2.to_point();
 
         // Find a box where that fit the triangle
         let max_x = p0.x.max(p1.x).max(p2.x).min(self.width - 1);
@@ -269,9 +269,9 @@ impl Image {
         let index = |i: usize, j: usize| i * (w as usize) + j;
 
         // Convert vertices to points in the image
-        let p0 = v0.to_image_point(self.width, self.height);
-        let p1 = v1.to_image_point(self.width, self.height);
-        let p2 = v2.to_image_point(self.width, self.height);
+        let p0 = v0.to_point();
+        let p1 = v1.to_point();
+        let p2 = v2.to_point();
 
         // Find a box where that fit the triangle
         let max_x = p0.x.max(p1.x).max(p2.x).min(self.width - 1);
