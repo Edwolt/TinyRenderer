@@ -1,8 +1,7 @@
 use std::collections::VecDeque;
 use std::convert::TryInto;
 use std::fs::File;
-use std::io::{BufReader, BufWriter};
-use std::io::{Read, Write};
+use std::io::{BufReader, BufWriter, Read, Write};
 use std::io::{Seek, SeekFrom};
 
 use crate::modules::{Color, Point, Vector2, Vector3};
@@ -11,7 +10,7 @@ use crate::modules::{Color, Point, Vector2, Vector3};
 pub struct Image {
     pub width: i32,
     pub height: i32,
-    pub pixels: Vec<Color>,
+    pixels: Vec<Color>,
 }
 
 /// Test if the point p is inside triangle v0 v1 v2
@@ -58,6 +57,7 @@ impl Image {
     }
 
     /// Set all image's pixels to color
+    #[allow(dead_code)]
     pub fn clear(&mut self, color: Color) {
         for i in 0..self.pixels.len() {
             self.pixels[i] = color;
@@ -467,6 +467,7 @@ impl Image {
     }
 
     /// Save the image as a bitmap
+    #[allow(dead_code)]
     pub fn save_bmp(&self, path: &str) -> std::io::Result<()> {
         let mut file = BufWriter::new(File::create(path)?);
 

@@ -43,15 +43,38 @@ impl Model {
         }
     }
 
+    /// Draw triangles in orthographic projection
+    /// (Triangles can overlap others)
+    pub fn render_triangles(&self, image: &mut Image, color: Color, light_source: Vector3) {
+        for face in self.faces() {
+            let (u, _, _) = face[0];
+            let (v, _, _) = face[1];
+            let (w, _, _) = face[2];
+
+            let normal = Vector3::normal(u, v, w);
+            let intensity = normal * light_source;
+
+            if intensity > 0.0 {
+                let u = u.to_image_point(image.width, image.height);
+                let v = v.to_image_point(image.width, image.height);
+                let w = w.to_image_point(image.width, image.height);
+
+                image.triangle((u, v, w), color.light(intensity));
+            }
+        }
+    }
+
     /// Render a image in orthographic projection
     /// using a color
+    ///
+    /// Return Zbuffer for debug pruporse
     pub fn render_color(
         &self,
         image: &mut Image,
         viewport: (Vector3, Vector3),
         color: Color,
         light_source: Vector3,
-    ) {
+    ) -> Vec<f64> {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
         let transform = matrix_viewport(viewport.0, viewport.1);
 
@@ -70,16 +93,20 @@ impl Model {
 
             image.triangle_zbuffer(&mut zbuffer, (u, v, w), draw_color);
         }
+
+        zbuffer
     }
 
     /// Render a image in orthographic projection
     /// using a diffuse texture image
+    ///
+    /// Return Zbuffer for debug pruporse
     pub fn render_texture(
         &self,
         image: &mut Image,
         viewport: (Vector3, Vector3),
         light_source: Vector3,
-    ) {
+    ) -> Vec<f64> {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
         let transform = matrix_viewport(viewport.0, viewport.1);
 
@@ -112,17 +139,21 @@ impl Model {
                 intensity,
             );
         }
+
+        zbuffer
     }
 
     /// Render a image in pespective projection
     /// using a diffuse texture image
+    ///
+    /// Return Zbuffer for debug pruporse
     pub fn render_perspective(
         &self,
         image: &mut Image,
         viewport: (Vector3, Vector3),
         camera_z: f64,
         light_source: Vector3,
-    ) {
+    ) -> Vec<f64> {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
         let transform = matrix_viewport(viewport.0, viewport.1) * matrix_perspective(camera_z);
 
@@ -155,17 +186,21 @@ impl Model {
                 intensity,
             );
         }
+
+        zbuffer
     }
 
     /// Render a image in orthographic projection
     /// using Gouraud shading
+    ///
+    /// Return Zbuffer for debug pruporse
     pub fn render_gouraud_color(
         &self,
         image: &mut Image,
         viewport: (Vector3, Vector3),
         color: Color,
         light_source: Vector3,
-    ) {
+    ) -> Vec<f64> {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
         let transform = matrix_viewport(viewport.0, viewport.1);
 
@@ -186,18 +221,22 @@ impl Model {
                 light_source,
             );
         }
+
+        zbuffer
     }
 
     /// Render a image in pespective projection
     /// using a diffuse texture
     /// and Gouraud shading
+    ///
+    /// Return Zbuffer for debug pruporse
     pub fn render_gouraud(
         &self,
         image: &mut Image,
         viewport: (Vector3, Vector3),
         camera_z: f64,
         light_source: Vector3,
-    ) {
+    ) -> Vec<f64> {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
         let transform = matrix_viewport(viewport.0, viewport.1) * matrix_perspective(camera_z);
 
@@ -228,10 +267,14 @@ impl Model {
                 light_source,
             );
         }
+
+        zbuffer
     }
     /// Render a image in pespective projection
     /// using a diffuse texture
     /// and Gouraud shading
+    ///
+    /// Return Zbuffer for debug pruporse
     pub fn render_look_at(
         &self,
         image: &mut Image,
@@ -240,16 +283,14 @@ impl Model {
         center: Vector3,
         up: Vector3,
         light_source: Vector3,
-    ) {
+    ) -> Vec<f64> {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
         // Transformation chain: Viewport * Projection * View * Model * v
         let mut model_view = matrix_model_view(eye, center, up);
         let transform =
             matrix_viewport(viewport.0, viewport.1) * matrix_perspective(eye.z) * &model_view;
 
-        dbg!(&model_view);
         model_view.transpose(); // Now it'll be used to convert normals
-        dbg!(&model_view);
         for face in self.faces() {
             let diffuse = match &self.diffuse {
                 Some(image) => image,
@@ -282,6 +323,8 @@ impl Model {
                 light_source,
             );
         }
+
+        zbuffer
     }
 
     /// Calculate the normals of all vertices that isn't calculated yet

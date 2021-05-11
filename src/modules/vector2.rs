@@ -11,8 +11,9 @@ pub struct Vector2 {
 
 impl Vector2 {
     /// Caculate barycentric coordinates of a vector v using the triangle ΔABC
+    #[allow(dead_code)]
     pub fn barycentric(
-        v: Vector2,
+        p: Vector2,
         triangle: (Vector2, Vector2, Vector2),
     ) -> Option<(f64, f64, f64)> {
         // Barycentric coordinates is the (α, β, 𝛾) where
@@ -22,17 +23,17 @@ impl Vector2 {
 
         let ab = b - a;
         let ac = c - a;
-        let va = a - v;
+        let pa = a - p;
 
         let vec_x = Vector3 {
             x: ab.x,
             y: ac.x,
-            z: va.x,
+            z: pa.x,
         };
         let vec_y = Vector3 {
             x: ab.y,
             y: ac.y,
-            z: va.y,
+            z: pa.y,
         };
 
         let Vector3 { x: u, y: v, z } = vec_x.cross(vec_y);
@@ -59,13 +60,15 @@ impl Vector2 {
         }
     }
 
-    /// Norm of the Vertex
+    /// Norm of the vector
+    #[allow(dead_code)]
     pub fn norm(self) -> f64 {
         let Vector2 { x, y } = self;
         (x * x + y * y).sqrt()
     }
 
-    /// Vertex normalized
+    /// Vector normalized
+    #[allow(dead_code)]
     pub fn normalize(self) -> Vector2 {
         if self.x.abs() < f64::EPSILON && self.y.abs() < f64::EPSILON {
             Vector2 { x: 0.0, y: 0.0 }
@@ -74,7 +77,10 @@ impl Vector2 {
         }
     }
 
-    /// Cross product norm with z = 0
+    /// Cross product augmenting the vectors with z = 0
+    ///
+    /// (x1, y1, 0) ^ (x2, y2, 0) -> (x, y, z) -> (x, y)
+    #[allow(dead_code)]
     pub fn cross(self, other: Vector2) -> f64 {
         self.x * other.y - self.y * other.x
     }

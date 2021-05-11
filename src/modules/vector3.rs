@@ -13,7 +13,7 @@ pub struct Vector3 {
 impl Vector3 {
     /// Caculate barycentric coordinates of a vector v using the triangle
     pub fn barycentric(
-        v: Vector3,
+        p: Vector3,
         triangle: (Vector3, Vector3, Vector3),
     ) -> Option<(f64, f64, f64)> {
         // Barycentric coordinates is the (α, β, 𝛾) where
@@ -23,17 +23,17 @@ impl Vector3 {
 
         let ab = b - a;
         let ac = c - a;
-        let va = a - v;
+        let pa = a - p;
 
         let vec_x = Vector3 {
             x: ab.x,
             y: ac.x,
-            z: va.x,
+            z: pa.x,
         };
         let vec_y = Vector3 {
             x: ab.y,
             y: ac.y,
-            z: va.y,
+            z: pa.y,
         };
 
         let Vector3 { x: u, y: v, z } = vec_x.cross(vec_y);

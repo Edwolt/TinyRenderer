@@ -52,6 +52,14 @@ impl Color {
         }
     }
 
+    pub const fn gray(value: u8) -> Color {
+        Color {
+            r: value,
+            g: value,
+            b: value,
+        }
+    }
+
     /// Return a color with the intesity changed
     pub fn light(&self, intensity: f64) -> Color {
         if intensity > 0.0 {

@@ -1,16 +1,14 @@
-#![allow(dead_code)]
-
 mod modules;
-use modules::{Color, Vector3};
+use crate::modules::{Color, Point, Vector3};
 
 mod image;
-use image::Image;
+use crate::image::Image;
 
 mod model;
-use model::Model;
+use crate::model::Model;
 
-const MODEL: &str = "diablo3_pose";
-// const MODEL: &str = "african_head";
+// const MODEL: &str = "diablo3_pose";
+const MODEL: &str = "african_head";
 // const MODEL: &str = "african_head_novn";
 
 const WIDTH: i32 = 1024;
@@ -89,32 +87,70 @@ fn main() {
         Model::new(image_path, Some(texture_path)).expect("Can't open model")
     };
 
+    let mut zbuffer: Vec<f64> = Vec::new();
+    let index = |i: usize| Point {
+        x: (i % (WIDTH as usize)) as i32,
+        y: (i / (WIDTH as usize)) as i32,
+    };
+
     wrap_render("Wireframe", "wireframe.tga", |image| {
         model.render_wireframe(image, COLOR)
     });
 
+    wrap_render("Triangles", "triangles.tga", |image| {
+        model.render_triangles(image, COLOR, LIGHT_SOURCE)
+    });
+
     wrap_render("Render Color", "color.tga", |image| {
-        model.render_color(image, VIEWPORT, COLOR, LIGHT_SOURCE)
+        zbuffer = model.render_color(image, VIEWPORT, COLOR, LIGHT_SOURCE);
+    });
+    wrap_render("Render Color - Zbuffer", "color_zbuffer.tga", |image| {
+        for i in 0..zbuffer.len() {
+            image.set(index(i), Color::gray(zbuffer[i] as u8))
+        }
+    });
+
+    wrap_render("Render Color", "color.tga", |image| {
+        zbuffer = model.render_color(image, VIEWPORT, COLOR, LIGHT_SOURCE);
     });
 
     wrap_render("Render Texture", "texture.tga", |image| {
-        model.render_texture(image, VIEWPORT, LIGHT_SOURCE)
+        zbuffer = model.render_texture(image, VIEWPORT, LIGHT_SOURCE);
     });
 
     wrap_render("Perspective", "perspective.tga", |image| {
-        model.render_perspective(image, VIEWPORT, CAMERA.z, LIGHT_SOURCE);
+        zbuffer = model.render_perspective(image, VIEWPORT, CAMERA.z, LIGHT_SOURCE);
     });
+    wrap_render(
+        "Perspective - Zbuffer",
+        "perspective_zbuffer.tga",
+        |image| {
+            for i in 0..zbuffer.len() {
+                image.set(index(i), Color::gray(zbuffer[i] as u8))
+            }
+        },
+    );
 
     wrap_render("Gouraud Color", "gouraud_color.tga", |image| {
-        model.render_gouraud_color(image, VIEWPORT, COLOR, LIGHT_SOURCE);
+        zbuffer = model.render_gouraud_color(image, VIEWPORT, COLOR, LIGHT_SOURCE);
     });
 
     wrap_render("Gouraud", "gouraud.tga", |image| {
-        model.render_gouraud(image, VIEWPORT, CAMERA.z, LIGHT_SOURCE);
+        zbuffer = model.render_gouraud(image, VIEWPORT, CAMERA.z, LIGHT_SOURCE);
+    });
+    wrap_render("Gouraud - Zbuffer", "gouraud_zbuffer.tga", |image| {
+        for i in 0..zbuffer.len() {
+            image.set(index(i), Color::gray(zbuffer[i] as u8))
+        }
     });
 
-    wrap_render("Look at", "look_at.tga", |image| {
-        model.render_look_at(image, VIEWPORT, CAMERA, CENTER, UP, LIGHT_SOURCE);
+    wrap_render("Look at", "look.tga", |image| {
+        zbuffer = model.render_look_at(image, VIEWPORT, CAMERA, CENTER, UP, LIGHT_SOURCE);
+    });
+    wrap_render("Look at - Zbuffer", "look_zbuffer.tga", |image| {
+        for i in 0..zbuffer.len() {
+            image.set(index(i), Color::gray(zbuffer[i] as u8))
+        }
     });
 
     println!("Images created with success");
