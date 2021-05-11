@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::Read;
+use std::io::{BufRead, BufReader};
 
 use crate::image::Image;
 use crate::modules::{mat, Color, Matrix, Vector2, Vector3};
@@ -349,11 +349,7 @@ impl Model {
             None => None,
         };
 
-        let mut file = File::open(model_path)?;
-
-        let mut lines: String = String::new();
-        file.read_to_string(&mut lines)?;
-        let lines = lines.split('\n');
+        let file = BufReader::new(File::open(model_path)?);
 
         let mut model = Model {
             vertices: Vec::new(),
@@ -364,7 +360,8 @@ impl Model {
         };
 
         let mut no_computed_normals = false;
-        for line in lines {
+        for line in file.lines() {
+            let line = line?;
             let mut data = line.split(" ").filter(|string| !string.is_empty());
 
             match data.next() {
