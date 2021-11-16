@@ -59,9 +59,7 @@ impl Image {
     /// Set all image's pixels to color
     #[allow(dead_code)]
     pub fn clear(&mut self, color: Color) {
-        for i in 0..self.pixels.len() {
-            self.pixels[i] = color;
-        }
+        self.pixels.iter_mut().for_each(|i| *i = color);
     }
 
     /// Flip the image vertically
@@ -648,8 +646,7 @@ impl Image {
                 }
             }
         } else {
-            for &color in &self.pixels {
-                let Color { r, g, b } = color;
+            for &Color { r, g, b } in &self.pixels {
                 file.write_all(&[r, g, b])?;
             }
         }

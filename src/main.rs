@@ -105,8 +105,8 @@ fn main() {
         zbuffer = model.render_color(image, VIEWPORT, COLOR, LIGHT_SOURCE);
     });
     wrap_render("Render Color - Zbuffer", "color_zbuffer.tga", |image| {
-        for i in 0..zbuffer.len() {
-            image.set(index(i), Color::gray(zbuffer[i] as u8))
+        for (i, &z) in zbuffer.iter().enumerate() {
+            image.set(index(i), Color::gray(z as u8))
         }
     });
 
@@ -125,8 +125,8 @@ fn main() {
         "Perspective - Zbuffer",
         "perspective_zbuffer.tga",
         |image| {
-            for i in 0..zbuffer.len() {
-                image.set(index(i), Color::gray(zbuffer[i] as u8))
+            for (i, &z) in zbuffer.iter().enumerate() {
+                image.set(index(i), Color::gray(z as u8))
             }
         },
     );
@@ -139,8 +139,8 @@ fn main() {
         zbuffer = model.render_gouraud(image, VIEWPORT, CAMERA.z, LIGHT_SOURCE);
     });
     wrap_render("Gouraud - Zbuffer", "gouraud_zbuffer.tga", |image| {
-        for i in 0..zbuffer.len() {
-            image.set(index(i), Color::gray(zbuffer[i] as u8))
+        for (i, &z) in zbuffer.iter().enumerate() {
+            image.set(index(i), Color::gray(z as u8))
         }
     });
 
@@ -148,8 +148,8 @@ fn main() {
         zbuffer = model.render_look_at(image, VIEWPORT, CAMERA, CENTER, UP, LIGHT_SOURCE);
     });
     wrap_render("Look at - Zbuffer", "look_zbuffer.tga", |image| {
-        for i in 0..zbuffer.len() {
-            image.set(index(i), Color::gray(zbuffer[i] as u8))
+        for (i, &z) in zbuffer.iter().enumerate() {
+            image.set(index(i), Color::gray(z as u8))
         }
     });
 
