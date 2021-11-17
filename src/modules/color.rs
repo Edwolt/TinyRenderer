@@ -60,7 +60,7 @@ impl Color {
         }
     }
 
-    /// Return a color with the intesity changed
+    /// Return a color with the intensity changed
     pub fn light(&self, intensity: f64) -> Color {
         if intensity > 0.0 {
             Color {

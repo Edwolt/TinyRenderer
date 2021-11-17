@@ -3,7 +3,7 @@ use std::ops::{Add, Div, Mul, Sub};
 use super::Vector3;
 
 // Using i32 instead of u32 make signed calculation simpler
-// For exmaple in the cross product
+// For example in the cross product
 /// Represents a Point in the image
 #[derive(Copy, Clone, Debug)]
 pub struct Point {

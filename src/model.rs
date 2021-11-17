@@ -67,7 +67,7 @@ impl Model {
     /// Render a image in orthographic projection
     /// using a color
     ///
-    /// Return Zbuffer for debug pruporse
+    /// Return Zbuffer for debug purpose
     pub fn render_color(
         &self,
         image: &mut Image,
@@ -146,7 +146,7 @@ impl Model {
     /// Render a image in pespective projection
     /// using a diffuse texture image
     ///
-    /// Return Zbuffer for debug pruporse
+    /// Return Zbuffer for debug purpose
     pub fn render_perspective(
         &self,
         image: &mut Image,
@@ -193,7 +193,7 @@ impl Model {
     /// Render a image in orthographic projection
     /// using Gouraud shading
     ///
-    /// Return Zbuffer for debug pruporse
+    /// Return Zbuffer for debug purpose
     pub fn render_gouraud_color(
         &self,
         image: &mut Image,
@@ -229,7 +229,7 @@ impl Model {
     /// using a diffuse texture
     /// and Gouraud shading
     ///
-    /// Return Zbuffer for debug pruporse
+    /// Return Zbuffer for debug purpose
     pub fn render_gouraud(
         &self,
         image: &mut Image,
@@ -274,7 +274,7 @@ impl Model {
     /// using a diffuse texture
     /// and Gouraud shading
     ///
-    /// Return Zbuffer for debug pruporse
+    /// Return Zbuffer for debug purpose
     pub fn render_look_at(
         &self,
         image: &mut Image,
@@ -616,7 +616,7 @@ fn matrix_model_view(eye: Vector3, center: Vector3, up: Vector3) -> Matrix {
     // | j'x  j'y  j'z | | i'y | = | i' * j' | = | 0 |
     // | k'x  k'y  k'z | | i'z |   | i' * k' |   | 0 |
     //
-    // To convert the coordinantes of the point P in the frame (O, i, j, k)
+    // To convert the coordinates of the point P in the frame (O, i, j, k)
     // to P' in the frame (C, i', j', k')
     // first we move c to the origin O then we multiply by M
     // P' = M * (P - C)

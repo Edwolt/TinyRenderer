@@ -474,7 +474,7 @@ impl Image {
         let image_size: u32 = (3 * self.width * self.height) as u32;
 
         // * Header
-        // Indentify the file
+        // Identify the file
         file.write_all(b"BM")?; // 2 ASCII chars
 
         // File size
@@ -543,7 +543,7 @@ impl Image {
         // Color map type (0 means no color map)
         file.write_all(&0u8.to_le_bytes())?; // 1 byte
 
-        // Image type (Comprenssion and color types)
+        // Image type (Compression and color types)
         let image_type = if rle { 10u8 } else { 2u8 };
         file.write_all(&(image_type).to_le_bytes())?; // 1 byte
 
@@ -658,7 +658,7 @@ impl Image {
         // Developer area offset (0 because we won't use extensio area)
         file.write_all(&0u32.to_le_bytes())?; // 4 bytes
 
-        // Indentify the file
+        // Identify the file
         file.write_all(b"TRUEVISION-XFILE.\0")?;
 
         file.flush()?;
@@ -684,7 +684,7 @@ impl Image {
             color_map
         );
 
-        // Image type (Comprenssion and color types)
+        // Image type (Compression and color types)
         file.read_exact(&mut buffer[..1])?;
         let image_type = u8::from_le_bytes(buffer[..1].try_into().unwrap()); // 1 byte
         let rle = match image_type {
