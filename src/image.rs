@@ -690,7 +690,7 @@ impl Image {
         let rle = match image_type {
             2u8 => false,
             10u8 => true,
-            _ => panic!("Load TGA: Image type {} not implemented", image_type),
+            _ => panic!("Load TGA: Image type {} not implemented!", image_type),
         };
 
         // ** Color Map specification
@@ -706,7 +706,7 @@ impl Image {
         let x_origin = u16::from_le_bytes(buffer[..2].try_into().unwrap()); // 2 bytes
         let y_origin = u16::from_le_bytes(buffer[2..4].try_into().unwrap()); // 2 bytes
         if x_origin != 0 || y_origin != 0 {
-            panic!("Load TGA: Only origin (0,0) is implemented");
+            panic!("Load TGA: Only origin (0,0) is implemented!");
         }
 
         // Image width and height
@@ -719,7 +719,7 @@ impl Image {
         let color_depth = u8::from_le_bytes(buffer[..1].try_into().unwrap()); // 1 bytes
         assert_eq!(
             color_depth, 24,
-            "Load TGA: Color depth {} not implemented",
+            "Load TGA: Color depth {} not implemented!",
             color_depth
         );
 
@@ -729,7 +729,7 @@ impl Image {
         assert_eq!(
             descriptor & 0b1100111,
             0u8,
-            "Load TGA: Image Descriptor {} not implemented",
+            "Load TGA: Image Descriptor {} not implemented!",
             descriptor
         );
         let flip_horizontally = (descriptor & 0b0001000) != 0;
@@ -755,7 +755,7 @@ impl Image {
                         image.pixels.push(color)
                     }
                 } else {
-                    // Rle packet
+                    // RLE packet
                     let packet_size = packet_size & 0b01111111;
                     file.read_exact(&mut buffer[..3])?;
                     let color = Color::from_bytes(buffer[..3].try_into().unwrap());
