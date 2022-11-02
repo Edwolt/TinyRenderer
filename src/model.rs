@@ -26,7 +26,7 @@ pub struct Model {
 
 impl Model {
     /// Wireframe Render in orthographic projection
-    pub fn render_wireframe(&self, image: &mut Image, color: Color) {
+    pub fn render_wireframe(&self, mut image: Image, color: Color) -> Image {
         for face in self.faces() {
             let mut v = match face.last() {
                 Some(v) => v.0,
@@ -41,11 +41,12 @@ impl Model {
                 v = u;
             }
         }
+        image
     }
 
     /// Draw triangles in orthographic projection
     /// (Triangles can overlap others)
-    pub fn render_triangles(&self, image: &mut Image, color: Color, light_source: Vector3) {
+    pub fn render_triangles(&self, mut image: Image, color: Color, light_source: Vector3) -> Image {
         for face in self.faces() {
             let (u, _, _) = face[0];
             let (v, _, _) = face[1];
@@ -62,6 +63,7 @@ impl Model {
                 image.triangle((u, v, w), color.light(intensity));
             }
         }
+        image
     }
 
     /// Render a image in orthographic projection
@@ -70,11 +72,11 @@ impl Model {
     /// Return Zbuffer for debug purpose
     pub fn render_color(
         &self,
-        image: &mut Image,
+        mut image: Image,
         viewport: (Vector3, Vector3),
         color: Color,
         light_source: Vector3,
-    ) -> Vec<f64> {
+    ) -> (Image, Vec<f64>) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
         let transform = matrix_viewport(viewport.0, viewport.1);
 
@@ -94,7 +96,7 @@ impl Model {
             image.triangle_zbuffer(&mut zbuffer, (u, v, w), draw_color);
         }
 
-        zbuffer
+        (image, zbuffer)
     }
 
     /// Render a image in orthographic projection
@@ -103,10 +105,10 @@ impl Model {
     /// Return Zbuffer for debug pruporse
     pub fn render_texture(
         &self,
-        image: &mut Image,
+        mut image: Image,
         viewport: (Vector3, Vector3),
         light_source: Vector3,
-    ) -> Vec<f64> {
+    ) -> (Image, Vec<f64>) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
         let transform = matrix_viewport(viewport.0, viewport.1);
 
@@ -140,7 +142,7 @@ impl Model {
             );
         }
 
-        zbuffer
+        (image, zbuffer)
     }
 
     /// Render a image in pespective projection
@@ -149,11 +151,11 @@ impl Model {
     /// Return Zbuffer for debug purpose
     pub fn render_perspective(
         &self,
-        image: &mut Image,
+        mut image: Image,
         viewport: (Vector3, Vector3),
         camera_z: f64,
         light_source: Vector3,
-    ) -> Vec<f64> {
+    ) -> (Image, Vec<f64>) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
         let transform = matrix_viewport(viewport.0, viewport.1) * matrix_perspective(camera_z);
 
@@ -187,7 +189,7 @@ impl Model {
             );
         }
 
-        zbuffer
+        (image, zbuffer)
     }
 
     /// Render a image in orthographic projection
@@ -196,11 +198,11 @@ impl Model {
     /// Return Zbuffer for debug purpose
     pub fn render_gouraud_color(
         &self,
-        image: &mut Image,
+        mut image: Image,
         viewport: (Vector3, Vector3),
         color: Color,
         light_source: Vector3,
-    ) -> Vec<f64> {
+    ) -> (Image, Vec<f64>) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
         let transform = matrix_viewport(viewport.0, viewport.1);
 
@@ -222,7 +224,7 @@ impl Model {
             );
         }
 
-        zbuffer
+        (image, zbuffer)
     }
 
     /// Render a image in pespective projection
@@ -232,11 +234,11 @@ impl Model {
     /// Return Zbuffer for debug purpose
     pub fn render_gouraud(
         &self,
-        image: &mut Image,
+        mut image: Image,
         viewport: (Vector3, Vector3),
         camera_z: f64,
         light_source: Vector3,
-    ) -> Vec<f64> {
+    ) -> (Image, Vec<f64>) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
         let transform = matrix_viewport(viewport.0, viewport.1) * matrix_perspective(camera_z);
 
@@ -268,7 +270,7 @@ impl Model {
             );
         }
 
-        zbuffer
+        (image, zbuffer)
     }
     /// Render a image in pespective projection
     /// using a diffuse texture
@@ -277,20 +279,20 @@ impl Model {
     /// Return Zbuffer for debug purpose
     pub fn render_look_at(
         &self,
-        image: &mut Image,
+        mut image: Image,
         viewport: (Vector3, Vector3),
         eye: Vector3,
         center: Vector3,
         up: Vector3,
         light_source: Vector3,
-    ) -> Vec<f64> {
+    ) -> (Image, Vec<f64>) {
         let mut zbuffer: Vec<f64> = vec![f64::NEG_INFINITY; (image.width * image.height) as usize];
         // Transformation chain: Viewport * Projection * View * Model * v
-        let mut model_view = matrix_model_view(eye, center, up);
+        let model_view = matrix_model_view(eye, center, up);
         let transform =
             matrix_viewport(viewport.0, viewport.1) * matrix_perspective(eye.z) * &model_view;
 
-        model_view.transpose(); // Now it'll be used to convert normals
+        let model_view = model_view.transpose(); // Now it'll be used to convert normals
         for face in self.faces() {
             let diffuse = match &self.diffuse {
                 Some(image) => image,
@@ -324,7 +326,7 @@ impl Model {
             );
         }
 
-        zbuffer
+        (image, zbuffer)
     }
 
     /// Calculate the normals of all vertices that isn't calculated yet
@@ -386,7 +388,7 @@ impl Model {
 
     /// Create a model from a Wavefront obj file
     /// and use the Truevision TGA file in texture_path if it isn't None
-    pub fn new(model_path: &str, texture_path: Option<&str>) -> std::io::Result<Model> {
+    pub fn new(model_path: &str, texture_path: Option<&str>) -> std::io::Result<Self> {
         let diffuse = match texture_path {
             Some(path) => Some(Image::load_tga(path)?),
             None => None,
@@ -394,7 +396,7 @@ impl Model {
 
         let file = BufReader::new(File::open(model_path)?);
 
-        let mut model = Model {
+        let mut model = Self {
             vertices: Vec::new(),
             faces: Vec::new(),
             textures: Vec::new(),

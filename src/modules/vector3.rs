@@ -12,10 +12,7 @@ pub struct Vector3 {
 
 impl Vector3 {
     /// Caculate barycentric coordinates of a vector v using the triangle
-    pub fn barycentric(
-        p: Vector3,
-        triangle: (Vector3, Vector3, Vector3),
-    ) -> Option<(f64, f64, f64)> {
+    pub fn barycentric(p: Self, triangle: (Self, Self, Self)) -> Option<(f64, f64, f64)> {
         // Barycentric coordinates is the (α, β, 𝛾) where
         // P = α*A + β*B + 𝛾*C and α + β + 𝛾 = 1
 
@@ -25,18 +22,18 @@ impl Vector3 {
         let ac = c - a;
         let pa = a - p;
 
-        let vec_x = Vector3 {
+        let vec_x = Self {
             x: ab.x,
             y: ac.x,
             z: pa.x,
         };
-        let vec_y = Vector3 {
+        let vec_y = Self {
             x: ab.y,
             y: ac.y,
             z: pa.y,
         };
 
-        let Vector3 { x: u, y: v, z } = vec_x.cross(vec_y);
+        let Self { x: u, y: v, z } = vec_x.cross(vec_y);
 
         // z can't be zero
         if z.abs() < f64::EPSILON {
@@ -51,8 +48,8 @@ impl Vector3 {
     /// Linear interpolation
     pub fn lerp(
         barycentric: Option<(f64, f64, f64)>,
-        triangle: (Vector3, Vector3, Vector3),
-    ) -> Option<Vector3> {
+        triangle: (Self, Self, Self),
+    ) -> Option<Self> {
         let (a, b, c) = triangle;
         match barycentric {
             Some((alpha, beta, gamma)) => Some(a * alpha + b * beta + c * gamma),
@@ -62,15 +59,15 @@ impl Vector3 {
 
     /// Norm of the vector
     pub fn norm(self) -> f64 {
-        let Vector3 { x, y, z } = self;
+        let Self { x, y, z } = self;
         (x * x + y * y + z * z).sqrt()
     }
 
     /// Vector normalized
-    pub fn normalize(self) -> Vector3 {
+    pub fn normalize(self) -> Self {
         if self.x.abs() < f64::EPSILON && self.y.abs() < f64::EPSILON && self.z.abs() < f64::EPSILON
         {
-            return Vector3 {
+            return Self {
                 x: 0.0,
                 y: 0.0,
                 z: 0.0,
@@ -79,25 +76,25 @@ impl Vector3 {
         self / self.norm()
     }
 
-    pub fn normal(u: Vector3, v: Vector3, w: Vector3) -> Vector3 {
+    pub fn normal(u: Self, v: Self, w: Self) -> Self {
         (v - u).cross(w - u).normalize()
     }
 
     /// Cross product
-    pub fn cross(self, other: Vector3) -> Vector3 {
-        let Vector3 {
+    pub fn cross(self, other: Self) -> Self {
+        let Self {
             x: x0,
             y: y0,
             z: z0,
         } = self;
 
-        let Vector3 {
+        let Self {
             x: x1,
             y: y1,
             z: z1,
         } = other;
 
-        Vector3 {
+        Self {
             x: y0 * z1 - y1 * z0,
             y: z0 * x1 - x0 * z1,
             z: x0 * y1 - y0 * x1,
@@ -155,9 +152,9 @@ impl Vector3 {
 }
 
 impl Add for Vector3 {
-    type Output = Vector3;
-    fn add(self, other: Vector3) -> Vector3 {
-        Vector3 {
+    type Output = Self;
+    fn add(self, other: Self) -> Self::Output {
+        Self {
             x: self.x + other.x,
             y: self.y + other.y,
             z: self.z + other.z,
@@ -166,9 +163,9 @@ impl Add for Vector3 {
 }
 
 impl Sub for Vector3 {
-    type Output = Vector3;
-    fn sub(self, other: Vector3) -> Vector3 {
-        Vector3 {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self::Output {
+        Self {
             x: self.x - other.x,
             y: self.y - other.y,
             z: self.z - other.z,
@@ -179,16 +176,16 @@ impl Sub for Vector3 {
 /// Scalar product
 impl Mul for Vector3 {
     type Output = f64;
-    fn mul(self, other: Vector3) -> f64 {
+    fn mul(self, other: Self) -> Self::Output {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 }
 
 /// Product with a scalar
 impl Mul<f64> for Vector3 {
-    type Output = Vector3;
-    fn mul(self, other: f64) -> Vector3 {
-        Vector3 {
+    type Output = Self;
+    fn mul(self, other: f64) -> Self::Output {
+        Self {
             x: self.x * other,
             y: self.y * other,
             z: self.z * other,
@@ -198,9 +195,9 @@ impl Mul<f64> for Vector3 {
 
 /// Product with the inverse of the scalar (u / a := u * (1 / a))
 impl Div<f64> for Vector3 {
-    type Output = Vector3;
-    fn div(self, other: f64) -> Vector3 {
-        Vector3 {
+    type Output = Self;
+    fn div(self, other: f64) -> Self::Output {
+        Self {
             x: self.x / other,
             y: self.y / other,
             z: self.z / other,

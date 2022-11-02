@@ -15,7 +15,7 @@ pub struct Matrix {
 ///
 /// Create a matrix 3x4 filled with the value 2:
 /// ```
-/// mat![2.0; 3, 4]  
+/// mat![2.0; 3, 4]
 /// ```
 ///
 /// <pre>
@@ -43,7 +43,7 @@ macro_rules! mat {
 }
 
 impl Matrix {
-    pub fn new(data: Vec<f64>, n: usize, m: usize) -> Matrix {
+    pub fn new(data: Vec<f64>, n: usize, m: usize) -> Self {
         assert_eq!(
             data.len(),
             n * m,
@@ -52,7 +52,7 @@ impl Matrix {
             m,
             n * m
         );
-        Matrix { n, m, data }
+        Self { n, m, data }
     }
 
     pub fn get(&self, i: usize, j: usize) -> f64 {
@@ -62,7 +62,7 @@ impl Matrix {
         self.data[i * self.m + j] = value;
     }
 
-    pub fn transpose(&mut self) {
+    pub fn transpose(mut self) ->Self{
         for i in 1..self.n {
             for j in 0..i {
                 // swap(self[i][j], self[j][i])
@@ -71,6 +71,7 @@ impl Matrix {
                 self.set(j, i, aux);
             }
         }
+        self
     }
 
     /// Convert a matrix 4x1 that represents to a vertex3
@@ -100,7 +101,7 @@ impl Matrix {
 // Matrix * Matrix
 impl Mul for Matrix {
     type Output = Matrix;
-    fn mul(self, other: Matrix) -> Matrix {
+    fn mul(self, other: Matrix) -> Self::Output {
         assert_eq!(
             self.m, other.n,
             "Can't multiply a Matrix {}x{} with one {}x{}",
@@ -124,7 +125,7 @@ impl Mul for Matrix {
 // Matrix * &Matrix
 impl Mul<&Matrix> for Matrix {
     type Output = Matrix;
-    fn mul(self, other: &Matrix) -> Matrix {
+    fn mul(self, other: &Matrix) -> Self::Output {
         assert_eq!(
             self.m, other.n,
             "Can't multiply a Matrix {}x{} with one {}x{}",
@@ -148,7 +149,7 @@ impl Mul<&Matrix> for Matrix {
 // &Matrix * &Matrix
 impl Mul for &Matrix {
     type Output = Matrix;
-    fn mul(self, other: &Matrix) -> Matrix {
+    fn mul(self, other: &Matrix) -> Self::Output {
         assert_eq!(
             self.m, other.n,
             "Can't multiply a Matrix {}x{} with one {}x{}",
@@ -172,7 +173,7 @@ impl Mul for &Matrix {
 // &Matrix * Matrix
 impl Mul<Matrix> for &Matrix {
     type Output = Matrix;
-    fn mul(self, other: Matrix) -> Matrix {
+    fn mul(self, other: Matrix) -> Self::Output {
         assert_eq!(
             self.m, other.n,
             "Can't multiply a Matrix {}x{} with one {}x{}",

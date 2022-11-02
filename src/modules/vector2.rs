@@ -12,10 +12,7 @@ pub struct Vector2 {
 impl Vector2 {
     /// Caculate barycentric coordinates of a vector v using the triangle ΔABC
     #[allow(dead_code)]
-    pub fn barycentric(
-        p: Vector2,
-        triangle: (Vector2, Vector2, Vector2),
-    ) -> Option<(f64, f64, f64)> {
+    pub fn barycentric(p: Self, triangle: (Self, Self, Self)) -> Option<(f64, f64, f64)> {
         // Barycentric coordinates is the (α, β, 𝛾) where
         // P = α*A + β*B + 𝛾*C and α + β + 𝛾 = 1
 
@@ -51,8 +48,8 @@ impl Vector2 {
     /// Linear interpolation
     pub fn lerp(
         barycentric: Option<(f64, f64, f64)>,
-        triangle: (Vector2, Vector2, Vector2),
-    ) -> Option<Vector2> {
+        triangle: (Self, Self, Self),
+    ) -> Option<Self> {
         let (a, b, c) = triangle;
         match barycentric {
             Some((alpha, beta, gamma)) => Some(a * alpha + b * beta + c * gamma),
@@ -63,15 +60,15 @@ impl Vector2 {
     /// Norm of the vector
     #[allow(dead_code)]
     pub fn norm(self) -> f64 {
-        let Vector2 { x, y } = self;
+        let Self { x, y } = self;
         (x * x + y * y).sqrt()
     }
 
     /// Vector normalized
     #[allow(dead_code)]
-    pub fn normalize(self) -> Vector2 {
+    pub fn normalize(self) -> Self {
         if self.x.abs() < f64::EPSILON && self.y.abs() < f64::EPSILON {
-            Vector2 { x: 0.0, y: 0.0 }
+            Self { x: 0.0, y: 0.0 }
         } else {
             self / self.norm()
         }
@@ -101,9 +98,9 @@ impl Vector2 {
 }
 
 impl Add for Vector2 {
-    type Output = Vector2;
-    fn add(self, other: Vector2) -> Vector2 {
-        Vector2 {
+    type Output = Self;
+    fn add(self, other: Self) -> Self::Output {
+        Self {
             x: self.x + other.x,
             y: self.y + other.y,
         }
@@ -111,9 +108,9 @@ impl Add for Vector2 {
 }
 
 impl Sub for Vector2 {
-    type Output = Vector2;
-    fn sub(self, other: Vector2) -> Vector2 {
-        Vector2 {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self::Output {
+        Self {
             x: self.x - other.x,
             y: self.y - other.y,
         }
@@ -123,16 +120,16 @@ impl Sub for Vector2 {
 /// Scalar product
 impl Mul for Vector2 {
     type Output = f64;
-    fn mul(self, other: Vector2) -> f64 {
+    fn mul(self, other: Self) -> Self::Output {
         self.x * other.x + self.y * other.y
     }
 }
 
 /// Product with a scalar
 impl Mul<f64> for Vector2 {
-    type Output = Vector2;
-    fn mul(self, other: f64) -> Vector2 {
-        Vector2 {
+    type Output = Self;
+    fn mul(self, other: f64) -> Self::Output {
+        Self {
             x: self.x * other,
             y: self.y * other,
         }
@@ -141,9 +138,9 @@ impl Mul<f64> for Vector2 {
 
 /// Product with the inverse of the scalar (u / a means u * (1 / a))
 impl Div<f64> for Vector2 {
-    type Output = Vector2;
-    fn div(self, other: f64) -> Vector2 {
-        Vector2 {
+    type Output = Self;
+    fn div(self, other: f64) -> Self::Output {
+        Self {
             x: self.x / other,
             y: self.y / other,
         }

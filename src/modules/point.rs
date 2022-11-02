@@ -13,7 +13,7 @@ pub struct Point {
 
 impl Point {
     /// Caculate barycentric coordinates of a point P using the triangle
-    pub fn barycentric(p: Point, triangle: (Point, Point, Point)) -> Option<(f64, f64, f64)> {
+    pub fn barycentric(p: Self, triangle: (Self, Self, Self)) -> Option<(f64, f64, f64)> {
         // Barycentric coordinates is the (α, β, 𝛾) where
         // P = α*A + β*B + 𝛾*C and α + β + 𝛾 = 1
 
@@ -49,8 +49,8 @@ impl Point {
     /// Linear interpolation
     pub fn lerp(
         barycentric: Option<(f64, f64, f64)>,
-        triangle: (Point, Point, Point),
-    ) -> Option<Point> {
+        triangle: (Self, Self, Self),
+    ) -> Option<Self> {
         let (a, b, c) = triangle;
         match barycentric {
             Some((alpha, beta, gamma)) => Some(Point {
@@ -62,15 +62,15 @@ impl Point {
     }
 
     /// Cross product norm with z = 0
-    pub fn cross(self, other: Point) -> i32 {
+    pub fn cross(self, other: Self) -> i32 {
         self.x * other.y - self.y * other.x
     }
 }
 
 impl Add for Point {
-    type Output = Point;
-    fn add(self, other: Point) -> Point {
-        Point {
+    type Output = Self;
+    fn add(self, other: Self) -> Self::Output {
+        Self {
             x: self.x + other.x,
             y: self.y + other.y,
         }
@@ -78,9 +78,9 @@ impl Add for Point {
 }
 
 impl Sub for Point {
-    type Output = Point;
-    fn sub(self, other: Point) -> Point {
-        Point {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self::Output {
+        Self {
             x: self.x - other.x,
             y: self.y - other.y,
         }
@@ -90,16 +90,16 @@ impl Sub for Point {
 /// Scalar product
 impl Mul for Point {
     type Output = i32;
-    fn mul(self, other: Point) -> i32 {
+    fn mul(self, other: Self) -> i32 {
         self.x * other.x + self.y * other.y
     }
 }
 
 /// Product with a scalar
 impl Mul<i32> for Point {
-    type Output = Point;
-    fn mul(self, other: i32) -> Point {
-        Point {
+    type Output = Self;
+    fn mul(self, other: i32) -> Self::Output {
+        Self {
             x: self.x * other,
             y: self.y * other,
         }
@@ -108,9 +108,9 @@ impl Mul<i32> for Point {
 
 /// Product with a scalar
 impl Div<i32> for Point {
-    type Output = Point;
-    fn div(self, other: i32) -> Point {
-        Point {
+    type Output = Self;
+    fn div(self, other: i32) -> Self::Output {
+        Self {
             x: self.x * other,
             y: self.y * other,
         }

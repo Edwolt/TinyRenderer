@@ -31,9 +31,9 @@ fn inside_triangle_barycentric(bary: Option<(f64, f64, f64)>) -> bool {
 
 impl Image {
     /// Create a new image with all pixels with the color black
-    pub fn new(width: i32, height: i32) -> Image {
+    pub fn new(width: i32, height: i32) -> Self {
         let size = (width * height) as usize;
-        Image {
+        Self {
             width,
             height,
             pixels: vec![Color::hex(b"#000"); size],
@@ -58,12 +58,13 @@ impl Image {
 
     /// Set all image's pixels to color
     #[allow(dead_code)]
-    pub fn clear(&mut self, color: Color) {
+    pub fn clear(mut self, color: Color) -> Self {
         self.pixels.iter_mut().for_each(|i| *i = color);
+        self
     }
 
     /// Flip the image vertically
-    pub fn flip_vertically(&mut self) {
+    pub fn flip_vertically(mut self) -> Self {
         let mut pixels: Vec<Color> = Vec::new();
         for y in (0..self.height).rev() {
             for x in 0..self.width {
@@ -71,10 +72,11 @@ impl Image {
             }
         }
         self.pixels = pixels;
+        self
     }
 
     /// Flip the image horizontally
-    pub fn flip_horizontally(&mut self) {
+    pub fn flip_horizontally(mut self) -> Self {
         let mut pixels: Vec<Color> = Vec::new();
         for y in 0..self.height {
             for x in (0..self.width).rev() {
@@ -82,6 +84,7 @@ impl Image {
             }
         }
         self.pixels = pixels;
+        self
     }
 
     /// Draw the triangle defined by the points v0, v1, v2
@@ -156,7 +159,7 @@ impl Image {
     pub fn triangle_zbuffer_texture(
         &mut self,
         zbuffer: &mut Vec<f64>,
-        texture: &Image,
+        texture: &Self,
         triangle: (Vector3, Vector3, Vector3),
         texture_triangle: (Vector2, Vector2, Vector2),
         intensity: f64,
@@ -256,7 +259,7 @@ impl Image {
     pub fn triangle_zbuffer_gourad_texture(
         &mut self,
         zbuffer: &mut Vec<f64>,
-        texture: &Image,
+        texture: &Self,
         triangle: (Vector3, Vector3, Vector3),
         texture_triangle: (Vector2, Vector2, Vector2),
         triangle_normals: (Vector3, Vector3, Vector3),
@@ -666,7 +669,7 @@ impl Image {
     }
 
     // Load the image from a True Vision TGA fil
-    pub fn load_tga(path: &str) -> std::io::Result<Image> {
+    pub fn load_tga(path: &str) -> std::io::Result<Self> {
         let mut file = BufReader::new(File::open(path)?);
         let mut buffer = [0u8; 4];
 
@@ -740,7 +743,7 @@ impl Image {
         file.seek(SeekFrom::Current(image_id_length as i64))?;
         // Color Map (we assert to no color map)
         // Image Data
-        let mut image = Image::new(width as i32, height as i32);
+        let mut image = Self::new(width as i32, height as i32);
         image.pixels.clear();
         if rle {
             while image.pixels.len() < (width as usize) * (height as usize) {
@@ -774,10 +777,10 @@ impl Image {
 
         // There is nothing important for this algorithm in the rest of the file
         if flip_horizontally {
-            image.flip_horizontally();
+            image = image.flip_horizontally();
         }
         if flip_vertically {
-            image.flip_vertically();
+            image = image.flip_vertically();
         }
 
         Ok(image)

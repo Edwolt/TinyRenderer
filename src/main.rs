@@ -59,14 +59,12 @@ const VIEWPORT: (Vector3, Vector3) = (
 /// Save the rendered image to a file and print some things
 fn wrap_render<F>(title: &str, path: &str, render: F)
 where
-    F: FnOnce(&mut Image),
+    F: FnOnce(Image) -> Image,
 {
-    let mut image = Image::new(WIDTH, HEIGHT);
-
     println!("{}", title);
 
     println!("> Rendering");
-    render(&mut image);
+    let image = render(Image::new(WIDTH, HEIGHT));
 
     println!("> Saving");
     image.save_tga(path, true).expect("Can't save the image");
@@ -102,55 +100,77 @@ fn main() {
     });
 
     wrap_render("Render Color", "color.tga", |image| {
-        zbuffer = model.render_color(image, VIEWPORT, COLOR, LIGHT_SOURCE);
+        let res = model.render_color(image, VIEWPORT, COLOR, LIGHT_SOURCE);
+        zbuffer = res.1;
+        res.0
     });
-    wrap_render("Render Color - Zbuffer", "color_zbuffer.tga", |image| {
-        for (i, &z) in zbuffer.iter().enumerate() {
-            image.set(index(i), Color::gray(z as u8))
-        }
-    });
+    wrap_render(
+        "Render Color - Zbuffer",
+        "color_zbuffer.tga",
+        |mut image| {
+            for (i, &z) in zbuffer.iter().enumerate() {
+                image.set(index(i), Color::gray(z as u8))
+            }
+            image
+        },
+    );
 
     wrap_render("Render Color", "color.tga", |image| {
-        zbuffer = model.render_color(image, VIEWPORT, COLOR, LIGHT_SOURCE);
+        let res = model.render_color(image, VIEWPORT, COLOR, LIGHT_SOURCE);
+        zbuffer = res.1;
+        res.0
     });
 
     wrap_render("Render Texture", "texture.tga", |image| {
-        zbuffer = model.render_texture(image, VIEWPORT, LIGHT_SOURCE);
+        let res = model.render_texture(image, VIEWPORT, LIGHT_SOURCE);
+        zbuffer = res.1;
+        res.0
     });
 
     wrap_render("Perspective", "perspective.tga", |image| {
-        zbuffer = model.render_perspective(image, VIEWPORT, CAMERA.z, LIGHT_SOURCE);
+        let res = model.render_perspective(image, VIEWPORT, CAMERA.z, LIGHT_SOURCE);
+        zbuffer = res.1;
+        res.0
     });
     wrap_render(
         "Perspective - Zbuffer",
         "perspective_zbuffer.tga",
-        |image| {
+        |mut image| {
             for (i, &z) in zbuffer.iter().enumerate() {
                 image.set(index(i), Color::gray(z as u8))
             }
+            image
         },
     );
 
     wrap_render("Gouraud Color", "gouraud_color.tga", |image| {
-        zbuffer = model.render_gouraud_color(image, VIEWPORT, COLOR, LIGHT_SOURCE);
+        let res = model.render_gouraud_color(image, VIEWPORT, COLOR, LIGHT_SOURCE);
+        zbuffer = res.1;
+        res.0
     });
 
     wrap_render("Gouraud", "gouraud.tga", |image| {
-        zbuffer = model.render_gouraud(image, VIEWPORT, CAMERA.z, LIGHT_SOURCE);
+        let res = model.render_gouraud(image, VIEWPORT, CAMERA.z, LIGHT_SOURCE);
+        zbuffer = res.1;
+        res.0
     });
-    wrap_render("Gouraud - Zbuffer", "gouraud_zbuffer.tga", |image| {
+    wrap_render("Gouraud - Zbuffer", "gouraud_zbuffer.tga", |mut image| {
         for (i, &z) in zbuffer.iter().enumerate() {
             image.set(index(i), Color::gray(z as u8))
         }
+        image
     });
 
     wrap_render("Look at", "look.tga", |image| {
-        zbuffer = model.render_look_at(image, VIEWPORT, CAMERA, CENTER, UP, LIGHT_SOURCE);
+        let res = model.render_look_at(image, VIEWPORT, CAMERA, CENTER, UP, LIGHT_SOURCE);
+        zbuffer = res.1;
+        res.0
     });
-    wrap_render("Look at - Zbuffer", "look_zbuffer.tga", |image| {
+    wrap_render("Look at - Zbuffer", "look_zbuffer.tga", |mut image| {
         for (i, &z) in zbuffer.iter().enumerate() {
             image.set(index(i), Color::gray(z as u8))
         }
+        image
     });
 
     println!("Images created with success");
